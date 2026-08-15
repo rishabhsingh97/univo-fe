@@ -179,6 +179,35 @@ export function IconChevronDown(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function IconBell(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 12 6 8Z" />
+      <path d="M9.5 17a2.5 2.5 0 0 0 5 0" />
+    </Icon>
+  );
+}
+
+export function IconHelp(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.3a2.5 2.5 0 0 1 4.8 1c0 1.7-2.3 2-2.3 3.5" />
+      <path d="M12 17.2v.1" />
+    </Icon>
+  );
+}
+
+export function IconLogout(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4" />
+      <path d="M14 8l4 4-4 4" />
+      <path d="M18 12H9" />
+    </Icon>
+  );
+}
+
 export function IconSearch(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>

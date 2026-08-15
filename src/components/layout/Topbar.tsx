@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
 import { buildSearchIndex, type NavLeaf } from './navConfig';
-import { IconSearch } from './navIcons';
-import { Button } from '../ui';
+import { IconSearch, IconBell, IconHelp, IconLogout } from './navIcons';
 import './layout.css';
 
 const MAX_RESULTS = 8;
@@ -86,14 +85,52 @@ export function Topbar() {
       </div>
 
       <div className="topbar-actions">
+        <IconMenuButton icon={IconBell} label="Notifications">
+          <div className="icon-popover-empty">No new notifications</div>
+        </IconMenuButton>
+        <IconMenuButton icon={IconHelp} label="Help">
+          <div className="icon-popover-empty">Need help? Contact your administrator.</div>
+        </IconMenuButton>
+        <button type="button" className="icon-btn" aria-label={t('topbar.logout')} onClick={logout}>
+          <IconLogout />
+        </button>
         <div className="topbar-who">
           <div className="avatar">{initials}</div>
           <span className="topbar-who-name">{session?.username}</span>
         </div>
-        <Button variant="secondary" onClick={logout}>
-          {t('topbar.logout')}
-        </Button>
       </div>
     </header>
+  );
+}
+
+function IconMenuButton({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: (props: { className?: string }) => ReactNode;
+  label: string;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  return (
+    <div className="icon-menu" ref={ref}>
+      <button type="button" className="icon-btn" aria-label={label} onClick={() => setOpen((o) => !o)}>
+        <Icon />
+      </button>
+      {open && <div className="icon-popover">{children}</div>}
+    </div>
   );
 }

@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useLocale } from '../../context/LocaleContext';
 import { useBranding } from '../../context/BrandingContext';
 import { useAuth } from '../../context/AuthContext';
-import { buildNavModules, buildSettingsLinks, canSeeLeaf } from './navConfig';
+import { buildNavModules, canSeeLeaf } from './navConfig';
 import { IconOverview, IconChevronRight, IconChevronDown, IconCheck } from './navIcons';
 import './layout.css';
 
@@ -14,7 +14,6 @@ export function Sidebar() {
   const location = useLocation();
 
   const modules = useMemo(() => buildNavModules(t), [t]);
-  const settingsLinks = useMemo(() => buildSettingsLinks(t), [t]);
 
   const visibleModules = useMemo(
     () =>
@@ -45,8 +44,6 @@ export function Sidebar() {
   }, [location.pathname]);
 
   const activeModule = visibleModules.find((mod) => mod.key === moduleKey) ?? visibleModules[0];
-
-  const visibleSettingsLinks = settingsLinks.filter((leaf) => canSeeLeaf(leaf, hasAnyPermission));
 
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const switcherRef = useRef<HTMLDivElement>(null);
@@ -135,22 +132,6 @@ export function Sidebar() {
           </details>
         );
       })}
-
-      {visibleSettingsLinks.length > 0 && (
-        <>
-          <div className="nav-label">{t('nav.settings')}</div>
-          {visibleSettingsLinks.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) => `sidebar-link sidebar-sublink${isActive ? ' active' : ''}`}
-            >
-              <link.icon className="link-icon" />
-              {link.label}
-            </NavLink>
-          ))}
-        </>
-      )}
     </aside>
   );
 }

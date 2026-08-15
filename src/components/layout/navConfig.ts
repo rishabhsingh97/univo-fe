@@ -115,20 +115,37 @@ export function buildNavModules(t: T): NavModule[] {
         },
       ],
     },
-  ];
-}
-
-export function buildSettingsLinks(t: T): NavLeaf[] {
-  return [
-    { to: '/settings/config', label: t('nav.settingsConfig'), icon: IconGeneral },
-    { to: '/settings/branding', label: t('nav.settingsBranding'), icon: IconBranding, anyOf: ['admin.branding.manage'] },
     {
-      to: '/settings/access',
-      label: t('nav.settingsAccess'),
-      icon: IconAccess,
-      anyOf: ['admin.role.manage', 'admin.user.manage'],
+      key: 'settings',
+      label: t('nav.settings'),
+      icon: IconGeneral,
+      groups: [
+        {
+          label: t('nav.settings'),
+          items: [
+            { to: '/settings/config', label: t('nav.settingsConfig'), icon: IconGeneral },
+            {
+              to: '/settings/branding',
+              label: t('nav.settingsBranding'),
+              icon: IconBranding,
+              anyOf: ['admin.branding.manage'],
+            },
+            {
+              to: '/settings/access',
+              label: t('nav.settingsAccess'),
+              icon: IconAccess,
+              anyOf: ['admin.role.manage', 'admin.user.manage'],
+            },
+            {
+              to: '/settings/fields',
+              label: t('nav.settingsFields'),
+              icon: IconFields,
+              anyOf: ['admin.fieldconfig.manage'],
+            },
+          ],
+        },
+      ],
     },
-    { to: '/settings/fields', label: t('nav.settingsFields'), icon: IconFields, anyOf: ['admin.fieldconfig.manage'] },
   ];
 }
 
@@ -139,7 +156,7 @@ export function canSeeLeaf(leaf: NavLeaf, hasAnyPermission: (names: string[]) =>
 /** Flat, permission-filtered list of every destination in the app - the topbar quick-nav
  * search runs against this. */
 export function buildSearchIndex(t: T, hasAnyPermission: (names: string[]) => boolean): NavLeaf[] {
-  const fromModules = buildNavModules(t).flatMap((mod) => mod.groups.flatMap((group) => group.items));
-  const fromSettings = buildSettingsLinks(t);
-  return [...fromModules, ...fromSettings].filter((leaf) => canSeeLeaf(leaf, hasAnyPermission));
+  return buildNavModules(t)
+    .flatMap((mod) => mod.groups.flatMap((group) => group.items))
+    .filter((leaf) => canSeeLeaf(leaf, hasAnyPermission));
 }

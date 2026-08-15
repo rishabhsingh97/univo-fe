@@ -306,7 +306,7 @@
   padding-left: var(--space-2);
 }
 
-.sidebar-footer .avatar {
+.avatar {
   width: 30px;
   height: 30px;
   border-radius: var(--radius-full);
@@ -336,7 +336,7 @@
   z-index: 10;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-4);
   padding: var(--space-3) var(--space-6);
   border-bottom: 1px solid var(--color-border);
   background: color-mix(in srgb, var(--color-surface) 90%, transparent);
@@ -345,10 +345,101 @@
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
+.topbar-search {
+  position: relative;
+  flex: 1;
+  max-width: 420px;
+}
+
+.topbar-search-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.topbar-search-input {
+  width: 100%;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px 8px 34px;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.topbar-search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.topbar-search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.topbar-search-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 6px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.topbar-search-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 9px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.topbar-search-item:hover {
+  background: var(--color-surface-alt);
+}
+
+.topbar-search-empty {
+  padding: 8px 9px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
 .topbar-actions {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: var(--space-3);
+}
+
+.topbar-who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.topbar-who-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
 }
 
 .main-content {

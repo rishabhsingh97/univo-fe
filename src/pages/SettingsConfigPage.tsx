@@ -1,5 +1,6 @@
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Card, PageHeader, SelectField } from '../components/ui';
 
 // A short curated list rather than every IANA zone - keeps the picker usable. Extend as
@@ -19,6 +20,7 @@ const COMMON_TIMEZONES = [
 export function SettingsConfigPage() {
   const { t } = useLocale();
   const { session, updateTimezone } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const handleTimezoneChange = (value: string) => {
     void updateTimezone(value === '' ? null : value);
@@ -38,6 +40,15 @@ export function SettingsConfigPage() {
           {COMMON_TIMEZONES.map((tz) => (
             <option key={tz} value={tz}>{tz}</option>
           ))}
+        </SelectField>
+        <SelectField
+          label={t('fields.theme')}
+          value={theme}
+          onChange={(e) => setTheme(e.target.value as 'light' | 'dark')}
+          style={{ minWidth: 240, marginTop: 16 }}
+        >
+          <option value="light">{t('pages.config.themeLight')}</option>
+          <option value="dark">{t('pages.config.themeDark')}</option>
         </SelectField>
       </Card>
     </div>

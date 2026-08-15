@@ -24,8 +24,7 @@ const en = {
     settingsConfig: 'Config',
   },
   topbar: {
-    darkMode: 'Dark mode',
-    lightMode: 'Light mode',
+    search: 'Search pages…',
     logout: 'Log out',
   },
   login: {
@@ -151,6 +150,8 @@ const en = {
       title: 'Config',
       description: 'General preferences for your account',
       tenantDefault: 'Tenant default',
+      themeLight: 'Light',
+      themeDark: 'Dark',
     },
   },
   table: {
@@ -201,6 +202,7 @@ const en = {
     themeVars: 'Advanced theme vars (JSON)',
     defaultTimezone: 'Default timezone',
     timezone: 'Timezone',
+    theme: 'Theme',
     entityName: 'Entity name',
     fieldName: 'Field name',
     fieldType: 'Field type',

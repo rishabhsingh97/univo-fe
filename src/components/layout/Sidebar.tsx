@@ -1,51 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useLocale } from '../../context/LocaleContext';
 import { useBranding } from '../../context/BrandingContext';
 import { useAuth } from '../../context/AuthContext';
-import {
-  IconOverview,
-  IconPeople,
-  IconOrgUnits,
-  IconClock,
-  IconLeave,
-  IconHoliday,
-  IconPayroll,
-  IconSalary,
-  IconFinance,
-  IconTax,
-  IconAudit,
-  IconShield,
-  IconGeneral,
-  IconBranding,
-  IconAccess,
-  IconFields,
-  IconChevronRight,
-  IconChevronDown,
-  IconCheck,
-} from './navIcons';
+import { buildNavModules, buildSettingsLinks, canSeeLeaf } from './navConfig';
+import { IconOverview, IconChevronRight, IconChevronDown, IconCheck } from './navIcons';
 import './layout.css';
-
-interface NavLeaf {
-  to: string;
-  label: string;
-  icon: (props: { className?: string }) => ReactNode;
-  /** Any one of these permissions is enough to show the link. Omit to always show it to any
-   * signed-in user. */
-  anyOf?: string[];
-}
-
-interface NavGroup {
-  label: string;
-  items: NavLeaf[];
-}
-
-interface NavModule {
-  key: string;
-  label: string;
-  icon: (props: { className?: string }) => ReactNode;
-  groups: NavGroup[];
-}
 
 export function Sidebar() {
   const { t } = useLocale();
@@ -53,88 +13,8 @@ export function Sidebar() {
   const { session, hasAnyPermission } = useAuth();
   const location = useLocation();
 
-  const modules: NavModule[] = [
-    {
-      key: 'hr',
-      label: 'Human Resources',
-      icon: IconPeople,
-      groups: [
-        {
-          label: 'Workforce',
-          items: [
-            { to: '/employees', label: t('nav.employees'), icon: IconPeople, anyOf: ['hr.employee.read'] },
-            { to: '/org-units', label: t('nav.orgUnits'), icon: IconOrgUnits, anyOf: ['hr.orgunit.read'] },
-          ],
-        },
-        {
-          label: 'Time & Leave',
-          items: [
-            { to: '/attendance', label: t('nav.attendance'), icon: IconClock, anyOf: ['attendance.read'] },
-            { to: '/leave', label: t('nav.leave'), icon: IconLeave, anyOf: ['leave.read'] },
-            { to: '/holidays', label: t('nav.holidays'), icon: IconHoliday, anyOf: ['holiday.read'] },
-          ],
-        },
-      ],
-    },
-    {
-      key: 'payroll',
-      label: 'Payroll',
-      icon: IconPayroll,
-      groups: [
-        {
-          label: 'Payroll',
-          items: [
-            { to: '/payroll', label: t('nav.payroll'), icon: IconPayroll, anyOf: ['payroll.run.read'] },
-            {
-              to: '/payroll/salary-structures',
-              label: t('nav.salaryStructures'),
-              icon: IconSalary,
-              anyOf: ['payroll.salarystructure.read'],
-            },
-          ],
-        },
-      ],
-    },
-    {
-      key: 'finance',
-      label: 'Finance',
-      icon: IconFinance,
-      groups: [
-        {
-          label: 'Finance',
-          items: [
-            {
-              to: '/finance',
-              label: t('nav.finance'),
-              icon: IconFinance,
-              anyOf: ['finance.loan.read', 'finance.reimbursement.read'],
-            },
-            { to: '/finance/tax-config', label: t('nav.taxConfig'), icon: IconTax, anyOf: ['finance.taxconfig.read'] },
-          ],
-        },
-      ],
-    },
-    {
-      key: 'admin',
-      label: 'Administration',
-      icon: IconShield,
-      groups: [
-        {
-          label: 'Administration',
-          items: [{ to: '/admin/audit-log', label: t('nav.auditLog'), icon: IconAudit, anyOf: ['audit.log.read'] }],
-        },
-      ],
-    },
-  ];
-
-  const settingsLinks: NavLeaf[] = [
-    { to: '/settings/config', label: t('nav.settingsConfig'), icon: IconGeneral },
-    { to: '/settings/branding', label: t('nav.settingsBranding'), icon: IconBranding, anyOf: ['admin.branding.manage'] },
-    { to: '/settings/access', label: t('nav.settingsAccess'), icon: IconAccess, anyOf: ['admin.role.manage', 'admin.user.manage'] },
-    { to: '/settings/fields', label: t('nav.settingsFields'), icon: IconFields, anyOf: ['admin.fieldconfig.manage'] },
-  ];
-
-  const canSeeLeaf = (leaf: NavLeaf) => !leaf.anyOf || hasAnyPermission(leaf.anyOf);
+  const modules = useMemo(() => buildNavModules(t), [t]);
+  const settingsLinks = useMemo(() => buildSettingsLinks(t), [t]);
 
   const visibleModules = useMemo(
     () =>
@@ -142,12 +22,12 @@ export function Sidebar() {
         .map((mod) => ({
           ...mod,
           groups: mod.groups
-            .map((group) => ({ ...group, items: group.items.filter(canSeeLeaf) }))
+            .map((group) => ({ ...group, items: group.items.filter((leaf) => canSeeLeaf(leaf, hasAnyPermission)) }))
             .filter((group) => group.items.length > 0),
         }))
         .filter((mod) => mod.groups.length > 0),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [session?.permissions],
+    [modules, session?.permissions],
   );
 
   const inferModuleKey = (pathname: string): string | undefined =>
@@ -166,7 +46,7 @@ export function Sidebar() {
 
   const activeModule = visibleModules.find((mod) => mod.key === moduleKey) ?? visibleModules[0];
 
-  const visibleSettingsLinks = settingsLinks.filter(canSeeLeaf);
+  const visibleSettingsLinks = settingsLinks.filter((leaf) => canSeeLeaf(leaf, hasAnyPermission));
 
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const switcherRef = useRef<HTMLDivElement>(null);

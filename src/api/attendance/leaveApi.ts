@@ -3,6 +3,7 @@ import type { PageResponse } from '../../types/common';
 import type {
   LeaveApplicationRequest,
   LeaveApplicationResponse,
+  LeavePendingCount,
   LeaveStatusUpdateRequest,
 } from '../../types/attendance';
 
@@ -12,6 +13,11 @@ export const leaveApi = {
       .get<PageResponse<LeaveApplicationResponse>>('/api/attendance/leave-applications', {
         params: { page, size },
       })
+      .then((res) => res.data),
+
+  pendingCount: () =>
+    apiClient
+      .get<LeavePendingCount>('/api/attendance/leave-applications/pending-count')
       .then((res) => res.data),
 
   create: (request: LeaveApplicationRequest) =>

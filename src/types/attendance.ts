@@ -29,6 +29,12 @@ export interface AttendanceResponse {
   remarks: string | null;
 }
 
+export interface AttendanceTodaySummary {
+  date: string;
+  presentCount: number;
+  totalEmployees: number;
+}
+
 export type LeaveType = 'ANNUAL' | 'SICK' | 'UNPAID' | 'OTHER';
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -53,4 +59,8 @@ export interface LeaveApplicationResponse {
 
 export interface LeaveStatusUpdateRequest {
   status: LeaveStatus;
+}
+
+export interface LeavePendingCount {
+  count: number;
 }

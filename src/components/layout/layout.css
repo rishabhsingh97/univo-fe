@@ -296,16 +296,6 @@
   opacity: 1;
 }
 
-.sidebar-footer {
-  margin-top: auto;
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding-left: var(--space-2);
-}
-
 .avatar {
   width: 30px;
   height: 30px;
@@ -317,17 +307,6 @@
   font-weight: 700;
   font-size: 12px;
   flex-shrink: 0;
-}
-
-.sidebar-footer .who-name {
-  font-size: 12.5px;
-  color: var(--color-text);
-  font-weight: 600;
-}
-
-.sidebar-footer .who-role {
-  font-size: 11px;
-  color: var(--color-text-muted);
 }
 
 .topbar {

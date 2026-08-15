@@ -62,7 +62,6 @@ export function Sidebar() {
   }, []);
 
   const brandName = branding?.companyName ?? t('app.name');
-  const initials = (session?.username ?? '?').slice(0, 2).toUpperCase();
 
   if (!activeModule) {
     // No module has any visible items for this user's permission set.
@@ -152,14 +151,6 @@ export function Sidebar() {
           ))}
         </>
       )}
-
-      <div className="sidebar-footer">
-        <div className="avatar">{initials}</div>
-        <div>
-          <div className="who-name">{session?.username}</div>
-          <div className="who-role">{session?.roles[0] ?? ''}</div>
-        </div>
-      </div>
     </aside>
   );
 }

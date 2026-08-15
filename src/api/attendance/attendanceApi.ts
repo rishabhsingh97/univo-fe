@@ -1,12 +1,15 @@
 import { apiClient } from '../client';
 import type { PageResponse } from '../../types/common';
-import type { AttendanceRequest, AttendanceResponse } from '../../types/attendance';
+import type { AttendanceRequest, AttendanceResponse, AttendanceTodaySummary } from '../../types/attendance';
 
 export const attendanceApi = {
   list: (page = 0, size = 20) =>
     apiClient
       .get<PageResponse<AttendanceResponse>>('/api/attendance/records', { params: { page, size } })
       .then((res) => res.data),
+
+  todaySummary: () =>
+    apiClient.get<AttendanceTodaySummary>('/api/attendance/records/today-summary').then((res) => res.data),
 
   create: (request: AttendanceRequest) =>
     apiClient.post<AttendanceResponse>('/api/attendance/records', request).then((res) => res.data),

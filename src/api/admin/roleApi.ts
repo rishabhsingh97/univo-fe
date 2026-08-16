@@ -1,19 +1,24 @@
 import { apiClient } from '../client';
+import type { PageResponse } from '../../types/common';
 import type { PermissionResponse, RoleRequest, RoleResponse } from '../../types/auth';
 
+const BASE = '/api/admin/roles';
+
 export const roleApi = {
-  list: () => apiClient.get<RoleResponse[]>('/api/admin/roles').then((res) => res.data),
+  list: (page = 0, size = 20, sort?: string) =>
+    apiClient.get<PageResponse<RoleResponse>>(BASE, { params: { page, size, sort } }).then((res) => res.data),
 
-  getById: (id: number) => apiClient.get<RoleResponse>(`/api/admin/roles/${id}`).then((res) => res.data),
+  getById: (id: number) => apiClient.get<RoleResponse>(`${BASE}/${id}`).then((res) => res.data),
 
-  create: (request: RoleRequest) =>
-    apiClient.post<RoleResponse>('/api/admin/roles', request).then((res) => res.data),
+  create: (request: RoleRequest) => apiClient.post<RoleResponse>(BASE, request).then((res) => res.data),
 
   update: (id: number, request: RoleRequest) =>
-    apiClient.put<RoleResponse>(`/api/admin/roles/${id}`, request).then((res) => res.data),
+    apiClient.put<RoleResponse>(`${BASE}/${id}`, request).then((res) => res.data),
 
-  delete: (id: number) => apiClient.delete<void>(`/api/admin/roles/${id}`).then(() => undefined),
+  delete: (id: number) => apiClient.delete<void>(`${BASE}/${id}`).then(() => undefined),
 
-  listPermissions: () =>
-    apiClient.get<PermissionResponse[]>('/api/admin/permissions').then((res) => res.data),
+  listPermissions: (page = 0, size = 200, sort?: string) =>
+    apiClient
+      .get<PageResponse<PermissionResponse>>('/api/admin/permissions', { params: { page, size, sort } })
+      .then((res) => res.data),
 };

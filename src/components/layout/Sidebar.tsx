@@ -4,7 +4,8 @@ import { useLocale } from '../../context/LocaleContext';
 import { useBranding } from '../../context/BrandingContext';
 import { useAuth } from '../../context/AuthContext';
 import { buildNavModules, canSeeLeaf } from './navConfig';
-import { IconOverview, IconChevronRight, IconChevronDown, IconCheck } from './navIcons';
+import { IconOverview, IconChevronRight, IconChevronDown, IconCheck, IconLock } from './navIcons';
+import { Modal } from '../ui/Modal';
 import './layout.css';
 
 export function Sidebar() {
@@ -18,6 +19,7 @@ export function Sidebar() {
   const visibleModules = useMemo(
     () =>
       modules
+        .filter((mod) => !session?.disabledModules?.includes(mod.key))
         .map((mod) => ({
           ...mod,
           groups: mod.groups
@@ -26,7 +28,7 @@ export function Sidebar() {
         }))
         .filter((mod) => mod.groups.length > 0),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [modules, session?.permissions],
+    [modules, session?.permissions, session?.disabledModules],
   );
 
   const inferModuleKey = (pathname: string): string | undefined =>
@@ -45,7 +47,10 @@ export function Sidebar() {
 
   const activeModule = visibleModules.find((mod) => mod.key === moduleKey) ?? visibleModules[0];
 
+  const visibleModuleKeys = useMemo(() => new Set(visibleModules.map((mod) => mod.key)), [visibleModules]);
+
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [allModulesOpen, setAllModulesOpen] = useState(false);
   const switcherRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -106,9 +111,55 @@ export function Sidebar() {
                   {mod.key === activeModule.key && <IconCheck className="check" />}
                 </button>
               ))}
+              <button
+                type="button"
+                className="switch-view-all"
+                onClick={() => {
+                  setSwitcherOpen(false);
+                  setAllModulesOpen(true);
+                }}
+              >
+                View all modules
+              </button>
             </div>
           )}
         </div>
+      )}
+
+      {visibleModules.length <= 1 && modules.length > visibleModules.length && (
+        <button type="button" className="switch-view-all standalone" onClick={() => setAllModulesOpen(true)}>
+          View all modules
+        </button>
+      )}
+
+      {allModulesOpen && (
+        <Modal title="All modules" onClose={() => setAllModulesOpen(false)}>
+          <div className="all-modules-grid">
+            {modules.map((mod) => {
+              const locked = !visibleModuleKeys.has(mod.key);
+              return (
+                <button
+                  key={mod.key}
+                  type="button"
+                  className={`all-modules-card${locked ? ' locked' : ''}${mod.key === activeModule.key ? ' current' : ''}`}
+                  disabled={locked}
+                  title={locked ? "You don't have access to this module" : undefined}
+                  onClick={() => {
+                    setModuleKey(mod.key);
+                    setAllModulesOpen(false);
+                  }}
+                >
+                  {locked && <IconLock className="lock" />}
+                  {!locked && mod.key === activeModule.key && <IconCheck className="check" />}
+                  <span className="switch-icon">
+                    <mod.icon />
+                  </span>
+                  <span className="all-modules-label">{mod.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Modal>
       )}
 
       <DashboardLink t={t} />

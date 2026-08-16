@@ -54,6 +54,12 @@ export function buildNavModules(t: T): NavModule[] {
           items: [
             { to: '/employees', label: t('nav.employees'), icon: IconPeople, anyOf: ['hr.employee.read'] },
             { to: '/org-units', label: t('nav.orgUnits'), icon: IconOrgUnits, anyOf: ['hr.orgunit.read'] },
+            {
+              to: '/designations-grades',
+              label: t('nav.designationsGrades'),
+              icon: IconOrgUnits,
+              anyOf: ['hr.designation.read', 'hr.grade.read'],
+            },
           ],
         },
         {
@@ -123,7 +129,6 @@ export function buildNavModules(t: T): NavModule[] {
         {
           label: t('nav.settings'),
           items: [
-            { to: '/settings/config', label: t('nav.settingsConfig'), icon: IconGeneral },
             {
               to: '/settings/branding',
               label: t('nav.settingsBranding'),
@@ -155,8 +160,13 @@ export function canSeeLeaf(leaf: NavLeaf, hasAnyPermission: (names: string[]) =>
 
 /** Flat, permission-filtered list of every destination in the app - the topbar quick-nav
  * search runs against this. */
-export function buildSearchIndex(t: T, hasAnyPermission: (names: string[]) => boolean): NavLeaf[] {
+export function buildSearchIndex(
+  t: T,
+  hasAnyPermission: (names: string[]) => boolean,
+  disabledModules: string[] = [],
+): NavLeaf[] {
   return buildNavModules(t)
+    .filter((mod) => !disabledModules.includes(mod.key))
     .flatMap((mod) => mod.groups.flatMap((group) => group.items))
     .filter((leaf) => canSeeLeaf(leaf, hasAnyPermission));
 }

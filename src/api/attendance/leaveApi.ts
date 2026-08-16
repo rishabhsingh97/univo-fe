@@ -8,10 +8,10 @@ import type {
 } from '../../types/attendance';
 
 export const leaveApi = {
-  list: (page = 0, size = 20) =>
+  list: (page = 0, size = 20, sort?: string) =>
     apiClient
       .get<PageResponse<LeaveApplicationResponse>>('/api/attendance/leave-applications', {
-        params: { page, size },
+        params: { page, size, sort },
       })
       .then((res) => res.data),
 

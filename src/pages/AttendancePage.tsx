@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { attendanceApi } from '../api/attendance/attendanceApi';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
 import { useTimezone } from '../hooks/useTimezone';
-import { Badge, Button, Card, DataTable, EmployeeSelect, Modal, PageHeader, SelectField, TextField, statusTone } from '../components/ui';
+import { Badge, Button, EmployeeSelect, Modal, PageHeader, PagedDataTable, SelectField, TextField, statusTone } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
 import type { AttendanceRequest, AttendanceResponse, AttendanceStatus } from '../types/attendance';
 
@@ -21,11 +21,11 @@ export function AttendancePage() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<AttendanceRequest>(emptyForm());
   const [editing, setEditing] = useState<AttendanceResponse | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   const canWrite = hasPermission('attendance.write');
   const canDelete = hasPermission('attendance.delete');
 
-  const { data, isLoading } = useQuery({ queryKey: ['attendance'], queryFn: () => attendanceApi.list(0, 50) });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['attendance'] });
 
   const createMutation = useMutation({
@@ -33,6 +33,7 @@ export function AttendancePage() {
     onSuccess: () => {
       invalidate();
       setForm(emptyForm());
+      setShowCreate(false);
     },
   });
 
@@ -64,9 +65,14 @@ export function AttendancePage() {
   };
 
   const columns: DataTableColumn<AttendanceResponse>[] = [
-    { key: 'date', header: t('fields.date'), render: (r) => formatDate(r.attendanceDate) },
+    { key: 'date', header: t('fields.date'), render: (r) => formatDate(r.attendanceDate), sortKey: 'attendanceDate' },
     { key: 'employee', header: t('common.selectEmployee'), render: (r) => r.employeeName },
-    { key: 'status', header: t('fields.status'), render: (r) => <Badge tone={statusTone(r.status)}>{r.status}</Badge> },
+    {
+      key: 'status',
+      header: t('fields.status'),
+      render: (r) => <Badge tone={statusTone(r.status)}>{r.status}</Badge>,
+      sortKey: 'status',
+    },
     { key: 'remarks', header: t('fields.remarks'), render: (r) => r.remarks ?? '-' },
     {
       key: 'actions',
@@ -86,11 +92,14 @@ export function AttendancePage() {
 
   return (
     <div>
-      <PageHeader title={t('pages.attendance.title')} description={t('pages.attendance.description')} />
+      <PageHeader
+        title={t('pages.attendance.title')}
+        description={t('pages.attendance.description')}
+        actions={canWrite ? <Button onClick={() => setShowCreate(true)}>{t('pages.attendance.addButton')}</Button> : undefined}
+      />
 
-      {canWrite && (
-        <Card style={{ marginBottom: 24 }}>
-          <h2 style={{ marginTop: 0 }}>{t('pages.attendance.createTitle')}</h2>
+      {showCreate && (
+        <Modal title={t('pages.attendance.createTitle')} onClose={() => setShowCreate(false)}>
           <form onSubmit={handleCreate} className="form-grid">
             <EmployeeSelect value={form.employeeId || ''} onChange={(id) => setForm({ ...form, employeeId: id })} required />
             <TextField label={t('fields.date')} type="date" value={form.attendanceDate} onChange={(e) => setForm({ ...form, attendanceDate: e.target.value })} required />
@@ -102,12 +111,13 @@ export function AttendancePage() {
               <Button type="submit" disabled={createMutation.isPending || !form.employeeId}>
                 {createMutation.isPending ? t('common.creating') : t('common.create')}
               </Button>
+              <Button type="button" variant="secondary" onClick={() => setShowCreate(false)}>{t('common.cancel')}</Button>
             </div>
           </form>
-        </Card>
+        </Modal>
       )}
 
-      <DataTable columns={columns} rows={data?.content ?? []} isLoading={isLoading} getRowKey={(r) => r.id} />
+      <PagedDataTable columns={columns} queryKey={['attendance']} fetchPage={attendanceApi.list} getRowKey={(r) => r.id} />
 
       {editing && (
         <Modal title={t('pages.attendance.editTitle')} onClose={() => setEditing(null)}>

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { orgUnitApi } from '../api/hr/orgUnitApi';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
-import { Button, Card, DataTable, Modal, PageHeader, SelectField, TextField } from '../components/ui';
+import { Button, Modal, PageHeader, PagedDataTable, SelectField, TextField } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
 import type { OrgUnitRequest, OrgUnitResponse, OrgUnitType } from '../types/hr';
 
@@ -19,12 +19,14 @@ export function OrgUnitsPage() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<OrgUnitRequest>(emptyForm());
   const [editing, setEditing] = useState<OrgUnitResponse | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   const canWrite = hasPermission('hr.orgunit.write');
   const canDelete = hasPermission('hr.orgunit.delete');
 
-  const { data, isLoading } = useQuery({ queryKey: ['org-units'], queryFn: () => orgUnitApi.list(0, 50) });
-  const orgUnits = data?.content ?? [];
+  // Every org unit, for the parent picker below - independent of the table's own page.
+  const { data: allOrgUnits } = useQuery({ queryKey: ['org-units', 'select'], queryFn: () => orgUnitApi.list(0, 200) });
+  const parentOptions = allOrgUnits?.content ?? [];
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['org-units'] });
 
@@ -33,6 +35,7 @@ export function OrgUnitsPage() {
     onSuccess: () => {
       invalidate();
       setForm(emptyForm());
+      setShowCreate(false);
     },
   });
 
@@ -64,9 +67,9 @@ export function OrgUnitsPage() {
   };
 
   const columns: DataTableColumn<OrgUnitResponse>[] = [
-    { key: 'code', header: t('fields.code'), render: (u) => u.code },
-    { key: 'name', header: t('fields.name'), render: (u) => u.name },
-    { key: 'type', header: t('fields.type'), render: (u) => u.type },
+    { key: 'code', header: t('fields.code'), render: (u) => u.code, sortKey: 'code' },
+    { key: 'name', header: t('fields.name'), render: (u) => u.name, sortKey: 'name' },
+    { key: 'type', header: t('fields.type'), render: (u) => u.type, sortKey: 'type' },
     { key: 'parent', header: t('fields.parent'), render: (u) => u.parentName ?? '-' },
     {
       key: 'actions',
@@ -86,11 +89,14 @@ export function OrgUnitsPage() {
 
   return (
     <div>
-      <PageHeader title={t('pages.orgUnits.title')} description={t('pages.orgUnits.description')} />
+      <PageHeader
+        title={t('pages.orgUnits.title')}
+        description={t('pages.orgUnits.description')}
+        actions={canWrite ? <Button onClick={() => setShowCreate(true)}>{t('pages.orgUnits.addButton')}</Button> : undefined}
+      />
 
-      {canWrite && (
-        <Card style={{ marginBottom: 24 }}>
-          <h2 style={{ marginTop: 0 }}>{t('pages.orgUnits.createTitle')}</h2>
+      {showCreate && (
+        <Modal title={t('pages.orgUnits.createTitle')} onClose={() => setShowCreate(false)}>
           <form onSubmit={handleCreate} className="form-grid">
             <TextField label={t('fields.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             <TextField label={t('fields.code')} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} required />
@@ -103,18 +109,19 @@ export function OrgUnitsPage() {
               onChange={(e) => setForm({ ...form, parentId: e.target.value ? Number(e.target.value) : null })}
             >
               <option value="">{t('pages.orgUnits.noParent')}</option>
-              {orgUnits.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              {parentOptions.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
             </SelectField>
             <div className="form-actions">
               <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending ? t('common.creating') : t('common.create')}
               </Button>
+              <Button type="button" variant="secondary" onClick={() => setShowCreate(false)}>{t('common.cancel')}</Button>
             </div>
           </form>
-        </Card>
+        </Modal>
       )}
 
-      <DataTable columns={columns} rows={orgUnits} isLoading={isLoading} getRowKey={(u) => u.id} />
+      <PagedDataTable columns={columns} queryKey={['org-units']} fetchPage={orgUnitApi.list} getRowKey={(u) => u.id} />
 
       {editing && (
         <Modal title={t('pages.orgUnits.editTitle')} onClose={() => setEditing(null)}>
@@ -130,7 +137,7 @@ export function OrgUnitsPage() {
               onChange={(e) => setEditing({ ...editing, parentId: e.target.value ? Number(e.target.value) : null })}
             >
               <option value="">{t('pages.orgUnits.noParent')}</option>
-              {orgUnits.filter((u) => u.id !== editing.id).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              {parentOptions.filter((u) => u.id !== editing.id).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
             </SelectField>
             <div className="form-actions">
               <Button type="submit" disabled={updateMutation.isPending}>

@@ -17,7 +17,7 @@ export function RolesPage() {
   return (
     <div>
       <PageHeader title={t('pages.roles.title')} description={t('pages.roles.description')} />
-      <DataTable columns={columns} rows={data ?? []} isLoading={isLoading} getRowKey={(r) => r.id} />
+      <DataTable columns={columns} rows={data?.content ?? []} isLoading={isLoading} getRowKey={(r) => r.id} />
     </div>
   );
 }

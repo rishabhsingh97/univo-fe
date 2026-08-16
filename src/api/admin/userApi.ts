@@ -3,9 +3,9 @@ import type { PageResponse } from '../../types/common';
 import type { AssignRolesRequest, UserResponse } from '../../types/auth';
 
 export const userApi = {
-  list: (page = 0, size = 20) =>
+  list: (page = 0, size = 20, sort?: string) =>
     apiClient
-      .get<PageResponse<UserResponse>>('/api/admin/users', { params: { page, size } })
+      .get<PageResponse<UserResponse>>('/api/admin/users', { params: { page, size, sort } })
       .then((res) => res.data),
 
   getById: (id: number) => apiClient.get<UserResponse>(`/api/admin/users/${id}`).then((res) => res.data),

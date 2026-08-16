@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { useBranding } from '../context/BrandingContext';
@@ -60,6 +60,9 @@ export function LoginPage() {
             {submitting ? t('login.signingIn') : t('login.signIn')}
           </Button>
         </form>
+        <Link to="/platform/login" style={{ display: 'block', marginTop: 16, fontSize: 12.5, textAlign: 'center' }}>
+          {t('login.platformAdminLink')}
+        </Link>
       </Card>
     </div>
   );

@@ -3,9 +3,9 @@ import type { PageResponse } from '../../types/common';
 import type { AttendanceRequest, AttendanceResponse, AttendanceTodaySummary } from '../../types/attendance';
 
 export const attendanceApi = {
-  list: (page = 0, size = 20) =>
+  list: (page = 0, size = 20, sort?: string) =>
     apiClient
-      .get<PageResponse<AttendanceResponse>>('/api/attendance/records', { params: { page, size } })
+      .get<PageResponse<AttendanceResponse>>('/api/attendance/records', { params: { page, size, sort } })
       .then((res) => res.data),
 
   todaySummary: () =>

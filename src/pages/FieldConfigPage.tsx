@@ -6,28 +6,60 @@ import { Button, Card, DataTable, Modal, PageHeader, SelectField, TextField } fr
 import type { DataTableColumn } from '../components/ui';
 import type { UiFieldConfigRequest, UiFieldConfigResponse } from '../types/admin';
 
-// A curated list of the entities the app already models - matches the module/*/entity classes
-// backing these forms. Free-form entity names are still accepted by the API if a future module
-// isn't listed here yet.
-const ENTITIES = [
-  'Employee',
-  'OrgUnit',
-  'AttendanceRecord',
-  'Holiday',
-  'LeaveApplication',
-  'PayrollRun',
-  'SalaryStructure',
-  'LoanAdvance',
-  'Reimbursement',
-  'TaxConfig',
-];
+// The real fields on each entity (matches the module/*/entity classes, excluding id/audit
+// columns) - this is "every field available to configure", independent of whether a
+// UiFieldConfig row already exists for it. A tenant can only relabel/hide/require fields that
+// actually exist, so there is no "add a new field" flow here.
+const KNOWN_FIELDS: Record<string, string[]> = {
+  Employee: [
+    'employeeCode', 'firstName', 'lastName', 'email', 'phone', 'orgUnit', 'designation', 'grade',
+    'manager', 'employmentType', 'dateOfJoining', 'confirmationDate', 'status', 'pan', 'aadhaarMasked',
+    'uan', 'esiNumber', 'emergencyContactName', 'emergencyContactPhone', 'bankAccountNumber', 'bankIfsc',
+  ],
+  OrgUnit: ['name', 'code', 'type', 'parent'],
+  AttendanceRecord: ['employee', 'attendanceDate', 'status', 'remarks'],
+  Holiday: ['name', 'holidayDate', 'recurringYearly'],
+  LeaveApplication: ['employee', 'leaveType', 'startDate', 'endDate', 'reason', 'status'],
+  PayrollRun: ['periodMonth', 'periodYear', 'status', 'runDate'],
+  SalaryStructure: ['employee', 'basic', 'hra', 'allowances', 'effectiveFrom'],
+  LoanAdvance: ['employee', 'amount', 'reason', 'status', 'requestedDate'],
+  Reimbursement: ['employee', 'amount', 'category', 'description', 'status', 'submittedDate'],
+  TaxConfig: ['financialYear', 'flatTaxRatePercent', 'standardDeduction'],
+};
+
+const ENTITIES = Object.keys(KNOWN_FIELDS);
 
 const FIELD_TYPES = ['TEXT', 'NUMBER', 'DATE', 'BOOLEAN', 'SELECT'];
 
-function emptyForm(entityName: string): UiFieldConfigRequest {
+/** "employeeCode" -> "Employee Code" - the default label shown for a field that has no
+ * UiFieldConfig override yet. */
+function defaultLabel(fieldName: string): string {
+  const spaced = fieldName.replace(/([A-Z])/g, ' $1').trim();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/** id is null for a field that has no override row yet - saving it creates one instead of
+ * updating. */
+type DisplayFieldRow = Omit<UiFieldConfigResponse, 'id'> & { id: number | null };
+
+function defaultRow(entityName: string, fieldName: string): DisplayFieldRow {
   return {
-    entityName, fieldName: '', label: '', fieldType: 'TEXT', custom: true,
-    enabled: true, required: false, readOnly: false, displayOrder: 0,
+    id: null, entityName, fieldName, label: defaultLabel(fieldName), fieldType: 'TEXT',
+    custom: false, enabled: true, required: false, readOnly: false, displayOrder: 0,
+  };
+}
+
+function toRequest(row: DisplayFieldRow): UiFieldConfigRequest {
+  return {
+    entityName: row.entityName,
+    fieldName: row.fieldName,
+    label: row.label,
+    fieldType: row.fieldType,
+    custom: row.custom,
+    enabled: row.enabled,
+    required: row.required,
+    readOnly: row.readOnly,
+    displayOrder: row.displayOrder,
   };
 }
 
@@ -35,14 +67,17 @@ export function FieldConfigPage() {
   const { t } = useLocale();
   const queryClient = useQueryClient();
   const [entityName, setEntityName] = useState(ENTITIES[0]);
-  const [form, setForm] = useState<UiFieldConfigRequest>(() => emptyForm(ENTITIES[0]));
-  const [editing, setEditing] = useState<UiFieldConfigResponse | null>(null);
+  const [editing, setEditing] = useState<DisplayFieldRow | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['field-config', entityName],
     queryFn: () => fieldConfigApi.listByEntity(entityName),
   });
-  const configs = data ?? [];
+
+  const rows: DisplayFieldRow[] = KNOWN_FIELDS[entityName].map((fieldName) => {
+    const existing = data?.find((c) => c.fieldName === fieldName);
+    return existing ?? defaultRow(entityName, fieldName);
+  });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['field-config', entityName] });
 
@@ -50,7 +85,7 @@ export function FieldConfigPage() {
     mutationFn: (request: UiFieldConfigRequest) => fieldConfigApi.create(request),
     onSuccess: () => {
       invalidate();
-      setForm(emptyForm(entityName));
+      setEditing(null);
     },
   });
 
@@ -67,40 +102,22 @@ export function FieldConfigPage() {
     onSuccess: invalidate,
   });
 
-  const handleEntityChange = (value: string) => {
-    setEntityName(value);
-    setForm(emptyForm(value));
-  };
+  const isSaving = createMutation.isPending || updateMutation.isPending;
 
-  const handleCreate = (event: FormEvent) => {
-    event.preventDefault();
-    createMutation.mutate(form);
-  };
-
-  const handleUpdate = (event: FormEvent) => {
+  const handleSave = (event: FormEvent) => {
     event.preventDefault();
     if (!editing) return;
-    updateMutation.mutate({
-      id: editing.id,
-      request: {
-        entityName: editing.entityName,
-        fieldName: editing.fieldName,
-        label: editing.label,
-        fieldType: editing.fieldType,
-        custom: editing.custom,
-        enabled: editing.enabled,
-        required: editing.required,
-        readOnly: editing.readOnly,
-        displayOrder: editing.displayOrder,
-      },
-    });
+    if (editing.id === null) {
+      createMutation.mutate(toRequest(editing));
+    } else {
+      updateMutation.mutate({ id: editing.id, request: toRequest(editing) });
+    }
   };
 
-  const columns: DataTableColumn<UiFieldConfigResponse>[] = [
+  const columns: DataTableColumn<DisplayFieldRow>[] = [
     { key: 'fieldName', header: t('fields.fieldName'), render: (c) => c.fieldName },
     { key: 'label', header: t('fields.label'), render: (c) => c.label },
     { key: 'fieldType', header: t('fields.fieldType'), render: (c) => c.fieldType },
-    { key: 'custom', header: t('fields.isCustom'), render: (c) => (c.custom ? '✓' : '-') },
     { key: 'enabled', header: t('fields.enabled'), render: (c) => (c.enabled ? '✓' : '-') },
     { key: 'required', header: t('fields.required'), render: (c) => (c.required ? '✓' : '-') },
     { key: 'readOnly', header: t('fields.readOnly'), render: (c) => (c.readOnly ? '✓' : '-') },
@@ -111,9 +128,14 @@ export function FieldConfigPage() {
       render: (c) => (
         <div className="row-actions">
           <Button variant="secondary" onClick={() => setEditing(c)}>{t('common.edit')}</Button>
-          <Button variant="danger" onClick={() => window.confirm(t('common.confirmDelete')) && deleteMutation.mutate(c.id)}>
-            {t('common.delete')}
-          </Button>
+          {c.id !== null && (
+            <Button
+              variant="danger"
+              onClick={() => window.confirm(t('pages.fieldConfig.confirmResetField')) && deleteMutation.mutate(c.id as number)}
+            >
+              {t('pages.fieldConfig.resetField')}
+            </Button>
+          )}
         </div>
       ),
     },
@@ -124,55 +146,21 @@ export function FieldConfigPage() {
       <PageHeader title={t('pages.fieldConfig.title')} description={t('pages.fieldConfig.description')} />
 
       <Card style={{ marginBottom: 24 }}>
-        <SelectField label={t('pages.fieldConfig.entityFilter')} value={entityName} onChange={(e) => handleEntityChange(e.target.value)} style={{ minWidth: 240 }}>
+        <SelectField
+          label={t('pages.fieldConfig.entityFilter')}
+          value={entityName}
+          onChange={(e) => setEntityName(e.target.value)}
+          style={{ minWidth: 240 }}
+        >
           {ENTITIES.map((entity) => <option key={entity} value={entity}>{entity}</option>)}
         </SelectField>
       </Card>
 
-      <Card style={{ marginBottom: 24 }}>
-        <h2 style={{ marginTop: 0 }}>{t('pages.fieldConfig.createTitle')}</h2>
-        <form onSubmit={handleCreate} className="form-grid">
-          <TextField label={t('fields.fieldName')} value={form.fieldName} onChange={(e) => setForm({ ...form, fieldName: e.target.value })} required />
-          <TextField label={t('fields.label')} value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} required />
-          <SelectField label={t('fields.fieldType')} value={form.fieldType} onChange={(e) => setForm({ ...form, fieldType: e.target.value })}>
-            {FIELD_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
-          </SelectField>
-          <TextField
-            label={t('fields.displayOrder')}
-            type="number"
-            value={form.displayOrder}
-            onChange={(e) => setForm({ ...form, displayOrder: Number(e.target.value) })}
-          />
-          <label className="checkbox-option">
-            <input type="checkbox" checked={form.custom} onChange={(e) => setForm({ ...form, custom: e.target.checked })} />
-            {t('fields.isCustom')}
-          </label>
-          <label className="checkbox-option">
-            <input type="checkbox" checked={form.enabled ?? true} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} />
-            {t('fields.enabled')}
-          </label>
-          <label className="checkbox-option">
-            <input type="checkbox" checked={form.required} onChange={(e) => setForm({ ...form, required: e.target.checked })} />
-            {t('fields.required')}
-          </label>
-          <label className="checkbox-option">
-            <input type="checkbox" checked={form.readOnly} onChange={(e) => setForm({ ...form, readOnly: e.target.checked })} />
-            {t('fields.readOnly')}
-          </label>
-          <div className="form-actions">
-            <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? t('common.creating') : t('common.create')}
-            </Button>
-          </div>
-        </form>
-      </Card>
-
-      <DataTable columns={columns} rows={configs} isLoading={isLoading} getRowKey={(c) => c.id} />
+      <DataTable columns={columns} rows={rows} isLoading={isLoading} getRowKey={(c) => c.fieldName} />
 
       {editing && (
-        <Modal title={t('pages.fieldConfig.editTitle')} onClose={() => setEditing(null)}>
-          <form onSubmit={handleUpdate} className="form-grid">
-            <TextField label={t('fields.fieldName')} value={editing.fieldName} onChange={(e) => setEditing({ ...editing, fieldName: e.target.value })} required />
+        <Modal title={editing.fieldName} onClose={() => setEditing(null)}>
+          <form onSubmit={handleSave} className="form-grid">
             <TextField label={t('fields.label')} value={editing.label} onChange={(e) => setEditing({ ...editing, label: e.target.value })} required />
             <SelectField label={t('fields.fieldType')} value={editing.fieldType} onChange={(e) => setEditing({ ...editing, fieldType: e.target.value })}>
               {FIELD_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
@@ -183,10 +171,6 @@ export function FieldConfigPage() {
               value={editing.displayOrder}
               onChange={(e) => setEditing({ ...editing, displayOrder: Number(e.target.value) })}
             />
-            <label className="checkbox-option">
-              <input type="checkbox" checked={editing.custom} onChange={(e) => setEditing({ ...editing, custom: e.target.checked })} />
-              {t('fields.isCustom')}
-            </label>
             <label className="checkbox-option">
               <input type="checkbox" checked={editing.enabled} onChange={(e) => setEditing({ ...editing, enabled: e.target.checked })} />
               {t('fields.enabled')}
@@ -200,8 +184,8 @@ export function FieldConfigPage() {
               {t('fields.readOnly')}
             </label>
             <div className="form-actions">
-              <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? t('common.saving') : t('common.save')}
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? t('common.saving') : t('common.save')}
               </Button>
               <Button type="button" variant="secondary" onClick={() => setEditing(null)}>{t('common.cancel')}</Button>
             </div>

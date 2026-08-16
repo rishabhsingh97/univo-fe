@@ -10,9 +10,14 @@ export interface LoginResponse {
   expiresInSeconds: number;
   username: string;
   roles: string[];
+  /** Display names for `roles`, same order - render these, not `roles` itself. */
+  roleLabels: string[];
   permissions: string[];
   /** This user's own timezone override, or null to fall back to the tenant's default. */
   timezone: string | null;
+  /** Module keys ("hr" | "payroll" | "finance") a platform admin has turned off for this
+   * tenant - hide the corresponding sidebar module. The backend enforces this regardless. */
+  disabledModules: string[];
 }
 
 export interface PermissionResponse {

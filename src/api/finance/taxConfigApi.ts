@@ -1,12 +1,15 @@
 import { apiClient } from '../client';
+import type { PageResponse } from '../../types/common';
 import type { TaxConfigRequest, TaxConfigResponse } from '../../types/finance';
 
-export const taxConfigApi = {
-  list: () => apiClient.get<TaxConfigResponse[]>('/api/finance/tax-config').then((res) => res.data),
+const BASE = '/api/finance/tax-config';
 
-  create: (request: TaxConfigRequest) =>
-    apiClient.post<TaxConfigResponse>('/api/finance/tax-config', request).then((res) => res.data),
+export const taxConfigApi = {
+  list: (page = 0, size = 20, sort?: string) =>
+    apiClient.get<PageResponse<TaxConfigResponse>>(BASE, { params: { page, size, sort } }).then((res) => res.data),
+
+  create: (request: TaxConfigRequest) => apiClient.post<TaxConfigResponse>(BASE, request).then((res) => res.data),
 
   update: (id: number, request: TaxConfigRequest) =>
-    apiClient.put<TaxConfigResponse>(`/api/finance/tax-config/${id}`, request).then((res) => res.data),
+    apiClient.put<TaxConfigResponse>(`${BASE}/${id}`, request).then((res) => res.data),
 };

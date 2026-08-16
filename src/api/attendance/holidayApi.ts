@@ -1,14 +1,17 @@
 import { apiClient } from '../client';
+import type { PageResponse } from '../../types/common';
 import type { HolidayRequest, HolidayResponse } from '../../types/attendance';
 
-export const holidayApi = {
-  list: () => apiClient.get<HolidayResponse[]>('/api/attendance/holidays').then((res) => res.data),
+const BASE = '/api/attendance/holidays';
 
-  create: (request: HolidayRequest) =>
-    apiClient.post<HolidayResponse>('/api/attendance/holidays', request).then((res) => res.data),
+export const holidayApi = {
+  list: (page = 0, size = 20, sort?: string) =>
+    apiClient.get<PageResponse<HolidayResponse>>(BASE, { params: { page, size, sort } }).then((res) => res.data),
+
+  create: (request: HolidayRequest) => apiClient.post<HolidayResponse>(BASE, request).then((res) => res.data),
 
   update: (id: number, request: HolidayRequest) =>
-    apiClient.put<HolidayResponse>(`/api/attendance/holidays/${id}`, request).then((res) => res.data),
+    apiClient.put<HolidayResponse>(`${BASE}/${id}`, request).then((res) => res.data),
 
-  delete: (id: number) => apiClient.delete<void>(`/api/attendance/holidays/${id}`).then(() => undefined),
+  delete: (id: number) => apiClient.delete<void>(`${BASE}/${id}`).then(() => undefined),
 };

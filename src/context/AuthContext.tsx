@@ -8,8 +8,10 @@ interface Session {
   tenantCode: string;
   username: string;
   roles: string[];
+  roleLabels: string[];
   permissions: string[];
   timezone: string | null;
+  disabledModules: string[];
 }
 
 interface AuthContextValue {
@@ -28,7 +30,12 @@ function readStoredSession(): Session | null {
   const raw = localStorage.getItem(SESSION_STORAGE_KEY);
   if (!raw) return null;
   const parsed = JSON.parse(raw) as Partial<Session>;
-  if (!Array.isArray(parsed.roles) || !Array.isArray(parsed.permissions)) {
+  if (
+    !Array.isArray(parsed.roles) ||
+    !Array.isArray(parsed.roleLabels) ||
+    !Array.isArray(parsed.permissions) ||
+    !Array.isArray(parsed.disabledModules)
+  ) {
     // Stale session shape from before these fields existed (or corrupted storage) - drop it
     // rather than crash downstream permission checks, forcing a clean re-login.
     localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -51,8 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tenantCode: request.tenantCode,
       username: response.username,
       roles: response.roles,
+      roleLabels: response.roleLabels,
       permissions: response.permissions,
       timezone: response.timezone,
+      disabledModules: response.disabledModules,
     };
     persist(nextSession);
     setSession(nextSession);

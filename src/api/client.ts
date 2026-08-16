@@ -25,8 +25,13 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      // Platform-admin pages share this same client/token slot (mutually exclusive with a
+      // tenant session in one browser tab) - send an expired platform session back to the
+      // platform login, not the tenant one.
+      const isPlatform = window.location.pathname.startsWith('/platform');
+      const loginPath = isPlatform ? '/platform/login' : '/login';
+      if (window.location.pathname !== loginPath) {
+        window.location.href = loginPath;
       }
     }
     return Promise.reject(error);

@@ -9,7 +9,7 @@ import { orgUnitApi } from '../api/hr/orgUnitApi';
 import { attendanceApi } from '../api/attendance/attendanceApi';
 import { leaveApi } from '../api/attendance/leaveApi';
 import { holidayApi } from '../api/attendance/holidayApi';
-import { Card, PageHeader, ApprovalActions } from '../components/ui';
+import { Card, PageHeader, ApprovalActions, PillList } from '../components/ui';
 import type { LeaveStatus } from '../types/attendance';
 import { IconPeople, IconOrgUnits, IconClock, IconLeave, IconHoliday } from '../components/layout/navIcons';
 import './dashboard.css';
@@ -62,7 +62,7 @@ export function DashboardPage() {
 
   const holidaysQuery = useQuery({
     queryKey: ['dashboard', 'holidays'],
-    queryFn: () => holidayApi.list(),
+    queryFn: () => holidayApi.list(0, 50),
     enabled: canViewHolidays,
   });
 
@@ -82,7 +82,7 @@ export function DashboardPage() {
 
   const upcomingHolidays = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
-    return (holidaysQuery.data ?? [])
+    return (holidaysQuery.data?.content ?? [])
       .filter((h) => h.holidayDate >= today)
       .sort((a, b) => a.holidayDate.localeCompare(b.holidayDate))
       .slice(0, HOLIDAYS_PREVIEW_SIZE);
@@ -104,7 +104,10 @@ export function DashboardPage() {
 
       {!hasAnyKpi && (
         <Card>
-          <p style={{ margin: 0 }}>Roles: {session?.roles.join(', ')}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>Roles:</span>
+            <PillList items={session?.roleLabels ?? []} />
+          </div>
         </Card>
       )}
 

@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { leaveApi } from '../api/attendance/leaveApi';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
 import { useTimezone } from '../hooks/useTimezone';
-import { ApprovalActions, Button, Card, DataTable, EmployeeSelect, PageHeader, SelectField, TextField } from '../components/ui';
+import { ApprovalActions, Button, EmployeeSelect, Modal, PageHeader, PagedDataTable, SelectField, TextField } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
 import type { LeaveApplicationRequest, LeaveApplicationResponse, LeaveStatus, LeaveType } from '../types/attendance';
 
@@ -21,12 +21,12 @@ export function LeavePage() {
   const { formatDate } = useTimezone();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<LeaveApplicationRequest>(emptyForm());
+  const [showCreate, setShowCreate] = useState(false);
 
   const canCreate = hasPermission('leave.write');
   const canManage = hasPermission('leave.write');
   const canDelete = hasPermission('leave.delete');
 
-  const { data, isLoading } = useQuery({ queryKey: ['leave-applications'], queryFn: () => leaveApi.list(0, 50) });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['leave-applications'] });
 
   const createMutation = useMutation({
@@ -34,6 +34,7 @@ export function LeavePage() {
     onSuccess: () => {
       invalidate();
       setForm(emptyForm());
+      setShowCreate(false);
     },
   });
 
@@ -54,8 +55,8 @@ export function LeavePage() {
 
   const columns: DataTableColumn<LeaveApplicationResponse>[] = [
     { key: 'employee', header: t('common.selectEmployee'), render: (r) => r.employeeName },
-    { key: 'type', header: t('fields.leaveType'), render: (r) => r.leaveType },
-    { key: 'dates', header: t('fields.date'), render: (r) => `${formatDate(r.startDate)} - ${formatDate(r.endDate)}` },
+    { key: 'type', header: t('fields.leaveType'), render: (r) => r.leaveType, sortKey: 'leaveType' },
+    { key: 'dates', header: t('fields.date'), render: (r) => `${formatDate(r.startDate)} - ${formatDate(r.endDate)}`, sortKey: 'startDate' },
     {
       key: 'status',
       header: t('fields.status'),
@@ -82,11 +83,14 @@ export function LeavePage() {
 
   return (
     <div>
-      <PageHeader title={t('pages.leave.title')} description={t('pages.leave.description')} />
+      <PageHeader
+        title={t('pages.leave.title')}
+        description={t('pages.leave.description')}
+        actions={canCreate ? <Button onClick={() => setShowCreate(true)}>{t('pages.leave.addButton')}</Button> : undefined}
+      />
 
-      {canCreate && (
-        <Card style={{ marginBottom: 24 }}>
-          <h2 style={{ marginTop: 0 }}>{t('pages.leave.createTitle')}</h2>
+      {showCreate && (
+        <Modal title={t('pages.leave.createTitle')} onClose={() => setShowCreate(false)}>
           <form onSubmit={handleCreate} className="form-grid">
             <EmployeeSelect value={form.employeeId || ''} onChange={(id) => setForm({ ...form, employeeId: id })} required />
             <SelectField label={t('fields.leaveType')} value={form.leaveType} onChange={(e) => setForm({ ...form, leaveType: e.target.value as LeaveType })}>
@@ -99,12 +103,13 @@ export function LeavePage() {
               <Button type="submit" disabled={createMutation.isPending || !form.employeeId}>
                 {createMutation.isPending ? t('common.creating') : t('common.create')}
               </Button>
+              <Button type="button" variant="secondary" onClick={() => setShowCreate(false)}>{t('common.cancel')}</Button>
             </div>
           </form>
-        </Card>
+        </Modal>
       )}
 
-      <DataTable columns={columns} rows={data?.content ?? []} isLoading={isLoading} getRowKey={(r) => r.id} />
+      <PagedDataTable columns={columns} queryKey={['leave-applications']} fetchPage={leaveApi.list} getRowKey={(r) => r.id} />
     </div>
   );
 }

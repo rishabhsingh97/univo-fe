@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
 import { buildSearchIndex, type NavLeaf } from './navConfig';
-import { IconSearch, IconBell, IconHelp, IconLogout } from './navIcons';
+import { IconSearch, IconBell, IconHelp, IconLogout, IconGeneral, IconPeople } from './navIcons';
 import './layout.css';
 
 const MAX_RESULTS = 8;
@@ -13,7 +13,10 @@ export function Topbar() {
   const { t } = useLocale();
   const navigate = useNavigate();
 
-  const searchIndex = useMemo(() => buildSearchIndex(t, hasAnyPermission), [t, hasAnyPermission]);
+  const searchIndex = useMemo(
+    () => buildSearchIndex(t, hasAnyPermission, session?.disabledModules),
+    [t, hasAnyPermission, session?.disabledModules],
+  );
 
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -91,15 +94,80 @@ export function Topbar() {
         <IconMenuButton icon={IconHelp} label="Help">
           <div className="icon-popover-empty">Need help? Contact your administrator.</div>
         </IconMenuButton>
-        <button type="button" className="icon-btn" aria-label={t('topbar.logout')} onClick={logout}>
-          <IconLogout />
-        </button>
-        <div className="topbar-who">
-          <div className="avatar">{initials}</div>
-          <span className="topbar-who-name">{session?.username}</span>
-        </div>
+        <ProfileMenu username={session?.username} initials={initials} onLogout={logout} />
       </div>
     </header>
+  );
+}
+
+function ProfileMenu({
+  username,
+  initials,
+  onLogout,
+}: {
+  username: string | undefined;
+  initials: string;
+  onLogout: () => void;
+}) {
+  const { t } = useLocale();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  return (
+    <div className="icon-menu topbar-who" ref={ref}>
+      <button type="button" className="avatar avatar-button" aria-label="Profile menu" onClick={() => setOpen((o) => !o)}>
+        {initials}
+      </button>
+      {open && (
+        <div className="icon-popover">
+          <div className="profile-menu-name">{username}</div>
+          <button
+            type="button"
+            className="profile-menu-item"
+            onClick={() => {
+              setOpen(false);
+              navigate('/my-details');
+            }}
+          >
+            <IconPeople className="link-icon" />
+            {t('topbar.myDetails')}
+          </button>
+          <button
+            type="button"
+            className="profile-menu-item"
+            onClick={() => {
+              setOpen(false);
+              navigate('/settings/config');
+            }}
+          >
+            <IconGeneral className="link-icon" />
+            {t('topbar.myPreferences')}
+          </button>
+          <button
+            type="button"
+            className="profile-menu-item"
+            onClick={() => {
+              setOpen(false);
+              onLogout();
+            }}
+          >
+            <IconLogout className="link-icon" />
+            {t('topbar.logout')}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

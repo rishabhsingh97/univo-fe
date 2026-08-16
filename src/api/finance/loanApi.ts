@@ -3,9 +3,9 @@ import type { PageResponse } from '../../types/common';
 import type { LoanAdvanceRequest, LoanAdvanceResponse, RequestStatusUpdateRequest } from '../../types/finance';
 
 export const loanApi = {
-  list: (page = 0, size = 20) =>
+  list: (page = 0, size = 20, sort?: string) =>
     apiClient
-      .get<PageResponse<LoanAdvanceResponse>>('/api/finance/loans', { params: { page, size } })
+      .get<PageResponse<LoanAdvanceResponse>>('/api/finance/loans', { params: { page, size, sort } })
       .then((res) => res.data),
 
   create: (request: LoanAdvanceRequest) =>

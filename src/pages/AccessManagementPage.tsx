@@ -4,7 +4,7 @@ import { roleApi } from '../api/admin/roleApi';
 import { userApi } from '../api/admin/userApi';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
-import { Badge, Button, Card, DataTable, Modal, PageHeader, TextField, statusTone } from '../components/ui';
+import { Badge, Button, Modal, PageHeader, PagedDataTable, PillList, TextField, statusTone } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
 import type { RoleRequest, RoleResponse, UserResponse } from '../types/auth';
 
@@ -23,6 +23,7 @@ export function AccessManagementPage() {
 
   const [tab, setTab] = useState<'roles' | 'users'>('roles');
   const [form, setForm] = useState<RoleRequest>(emptyRoleForm());
+  const [showCreateRole, setShowCreateRole] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleResponse | null>(null);
   const [assigningUser, setAssigningUser] = useState<UserResponse | null>(null);
   const [assignRoleIds, setAssignRoleIds] = useState<number[]>([]);
@@ -30,13 +31,13 @@ export function AccessManagementPage() {
   const canManageRoles = hasPermission('admin.role.manage');
   const canManageUsers = hasPermission('admin.user.manage');
 
-  const rolesQuery = useQuery({ queryKey: ['roles'], queryFn: () => roleApi.list() });
-  const permissionsQuery = useQuery({ queryKey: ['permissions'], queryFn: () => roleApi.listPermissions() });
-  const usersQuery = useQuery({ queryKey: ['users'], queryFn: () => userApi.list(0, 50) });
+  // Full (unpaginated-ish) lists - the "assign roles to user" and role-permission checkbox
+  // modals need every option, not just the visible page of the Roles table below.
+  const allRolesQuery = useQuery({ queryKey: ['roles', 'select'], queryFn: () => roleApi.list(0, 200) });
+  const permissionsQuery = useQuery({ queryKey: ['permissions'], queryFn: () => roleApi.listPermissions(0, 200) });
 
-  const roles = rolesQuery.data ?? [];
-  const permissions = permissionsQuery.data ?? [];
-  const users = usersQuery.data?.content ?? [];
+  const roles = allRolesQuery.data?.content ?? [];
+  const permissions = permissionsQuery.data?.content ?? [];
 
   const invalidateRoles = () => queryClient.invalidateQueries({ queryKey: ['roles'] });
 
@@ -45,6 +46,7 @@ export function AccessManagementPage() {
     onSuccess: () => {
       invalidateRoles();
       setForm(emptyRoleForm());
+      setShowCreateRole(false);
     },
   });
 
@@ -100,9 +102,9 @@ export function AccessManagementPage() {
   };
 
   const roleColumns: DataTableColumn<RoleResponse>[] = [
-    { key: 'label', header: t('fields.label'), render: (r) => r.label },
+    { key: 'label', header: t('fields.label'), render: (r) => r.label, sortKey: 'label' },
     { key: 'description', header: t('fields.description'), render: (r) => r.description ?? '-' },
-    { key: 'permissions', header: t('fields.permissions'), render: (r) => r.permissions.map((p) => p.name).join(', ') },
+    { key: 'permissions', header: t('fields.permissions'), render: (r) => <PillList items={r.permissions.map((p) => p.name)} /> },
   ];
   if (canManageRoles) {
     roleColumns.push({
@@ -120,10 +122,15 @@ export function AccessManagementPage() {
   }
 
   const userColumns: DataTableColumn<UserResponse>[] = [
-    { key: 'username', header: t('login.username'), render: (u) => u.username },
-    { key: 'email', header: t('fields.email'), render: (u) => u.email },
-    { key: 'roles', header: t('pages.accessManagement.rolesTab'), render: (u) => u.roles.map((r) => r.label).join(', ') || '-' },
-    { key: 'status', header: t('fields.status'), render: (u) => <Badge tone={statusTone(u.status)}>{u.status}</Badge> },
+    { key: 'username', header: t('login.username'), render: (u) => u.username, sortKey: 'username' },
+    { key: 'email', header: t('fields.email'), render: (u) => u.email, sortKey: 'email' },
+    { key: 'roles', header: t('pages.accessManagement.rolesTab'), render: (u) => <PillList items={u.roles.map((r) => r.label)} /> },
+    {
+      key: 'status',
+      header: t('fields.status'),
+      render: (u) => <Badge tone={statusTone(u.status)}>{u.status}</Badge>,
+      sortKey: 'status',
+    },
   ];
   if (canManageUsers) {
     userColumns.push({
@@ -135,7 +142,15 @@ export function AccessManagementPage() {
 
   return (
     <div>
-      <PageHeader title={t('pages.accessManagement.title')} description={t('pages.accessManagement.description')} />
+      <PageHeader
+        title={t('pages.accessManagement.title')}
+        description={t('pages.accessManagement.description')}
+        actions={
+          tab === 'roles' && canManageRoles ? (
+            <Button onClick={() => setShowCreateRole(true)}>{t('pages.accessManagement.addRole')}</Button>
+          ) : undefined
+        }
+      />
 
       <div className="row-actions" style={{ marginBottom: 16 }}>
         <Button variant={tab === 'roles' ? 'primary' : 'secondary'} onClick={() => setTab('roles')}>
@@ -147,43 +162,42 @@ export function AccessManagementPage() {
       </div>
 
       {tab === 'roles' && (
-        <>
-          {canManageRoles && (
-            <Card style={{ marginBottom: 24 }}>
-              <h2 style={{ marginTop: 0 }}>{t('pages.accessManagement.createRole')}</h2>
-              <form onSubmit={handleCreateRole} className="form-grid">
-                <TextField label={t('fields.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-                <TextField label={t('fields.label')} value={form.label ?? ''} onChange={(e) => setForm({ ...form, label: e.target.value })} />
-                <TextField label={t('fields.description')} value={form.description ?? ''} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-                <div className="field">
-                  <span className="field-label">{t('fields.permissions')}</span>
-                  <div className="checkbox-group">
-                    {permissions.map((p) => (
-                      <label key={p.id} className="checkbox-option">
-                        <input
-                          type="checkbox"
-                          checked={form.permissionIds.includes(p.id)}
-                          onChange={() => setForm({ ...form, permissionIds: toggleId(form.permissionIds, p.id) })}
-                        />
-                        {p.name}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div className="form-actions">
-                  <Button type="submit" disabled={createRoleMutation.isPending}>
-                    {createRoleMutation.isPending ? t('common.creating') : t('common.create')}
-                  </Button>
-                </div>
-              </form>
-            </Card>
-          )}
-          <DataTable columns={roleColumns} rows={roles} isLoading={rolesQuery.isLoading} getRowKey={(r) => r.id} />
-        </>
+        <PagedDataTable columns={roleColumns} queryKey={['roles']} fetchPage={roleApi.list} getRowKey={(r) => r.id} />
+      )}
+
+      {showCreateRole && (
+        <Modal title={t('pages.accessManagement.createRole')} onClose={() => setShowCreateRole(false)}>
+          <form onSubmit={handleCreateRole} className="form-grid">
+            <TextField label={t('fields.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <TextField label={t('fields.label')} value={form.label ?? ''} onChange={(e) => setForm({ ...form, label: e.target.value })} />
+            <TextField label={t('fields.description')} value={form.description ?? ''} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            <div className="field">
+              <span className="field-label">{t('fields.permissions')}</span>
+              <div className="checkbox-group">
+                {permissions.map((p) => (
+                  <label key={p.id} className="checkbox-option">
+                    <input
+                      type="checkbox"
+                      checked={form.permissionIds.includes(p.id)}
+                      onChange={() => setForm({ ...form, permissionIds: toggleId(form.permissionIds, p.id) })}
+                    />
+                    {p.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="form-actions">
+              <Button type="submit" disabled={createRoleMutation.isPending}>
+                {createRoleMutation.isPending ? t('common.creating') : t('common.create')}
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setShowCreateRole(false)}>{t('common.cancel')}</Button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {tab === 'users' && (
-        <DataTable columns={userColumns} rows={users} isLoading={usersQuery.isLoading} getRowKey={(u) => u.id} />
+        <PagedDataTable columns={userColumns} queryKey={['users']} fetchPage={userApi.list} getRowKey={(u) => u.id} />
       )}
 
       {editingRole && (

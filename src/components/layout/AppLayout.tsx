@@ -7,7 +7,7 @@ export function AppLayout() {
   return (
     <div className="app-shell">
       <Sidebar />
-      <div>
+      <div className="app-main">
         <Topbar />
         <main className="main-content">
           <Outlet />

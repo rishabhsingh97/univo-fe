@@ -7,9 +7,9 @@ import type {
 } from '../../types/finance';
 
 export const reimbursementApi = {
-  list: (page = 0, size = 20) =>
+  list: (page = 0, size = 20, sort?: string) =>
     apiClient
-      .get<PageResponse<ReimbursementResponse>>('/api/finance/reimbursements', { params: { page, size } })
+      .get<PageResponse<ReimbursementResponse>>('/api/finance/reimbursements', { params: { page, size, sort } })
       .then((res) => res.data),
 
   create: (request: ReimbursementRequest) =>

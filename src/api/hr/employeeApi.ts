@@ -1,21 +1,27 @@
 import { apiClient } from '../client';
 import type { PageResponse } from '../../types/common';
-import type { EmployeeRequest, EmployeeResponse } from '../../types/hr';
+import type { EmployeeRequest, EmployeeResponse, ReassignManagerRequest } from '../../types/hr';
+
+const BASE = '/api/hr/employees';
 
 export const employeeApi = {
-  list: (page = 0, size = 20) =>
-    apiClient
-      .get<PageResponse<EmployeeResponse>>('/api/hr/employees', { params: { page, size } })
-      .then((res) => res.data),
+  list: (page = 0, size = 20, sort?: string) =>
+    apiClient.get<PageResponse<EmployeeResponse>>(BASE, { params: { page, size, sort } }).then((res) => res.data),
 
-  getById: (id: number) =>
-    apiClient.get<EmployeeResponse>(`/api/hr/employees/${id}`).then((res) => res.data),
+  getById: (id: number) => apiClient.get<EmployeeResponse>(`${BASE}/${id}`).then((res) => res.data),
 
-  create: (request: EmployeeRequest) =>
-    apiClient.post<EmployeeResponse>('/api/hr/employees', request).then((res) => res.data),
+  create: (request: EmployeeRequest) => apiClient.post<EmployeeResponse>(BASE, request).then((res) => res.data),
 
   update: (id: number, request: EmployeeRequest) =>
-    apiClient.put<EmployeeResponse>(`/api/hr/employees/${id}`, request).then((res) => res.data),
+    apiClient.put<EmployeeResponse>(`${BASE}/${id}`, request).then((res) => res.data),
 
-  deactivate: (id: number) => apiClient.delete<void>(`/api/hr/employees/${id}`).then(() => undefined),
+  deactivate: (id: number) => apiClient.delete<void>(`${BASE}/${id}`).then(() => undefined),
+
+  directReports: (id: number, page = 0, size = 50) =>
+    apiClient
+      .get<PageResponse<EmployeeResponse>>(`${BASE}/${id}/direct-reports`, { params: { page, size } })
+      .then((res) => res.data),
+
+  reassignManager: (id: number, request: ReassignManagerRequest) =>
+    apiClient.put<EmployeeResponse>(`${BASE}/${id}/manager`, request).then((res) => res.data),
 };

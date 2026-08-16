@@ -44,6 +44,22 @@ export function BrandingPage() {
     },
   });
 
+  const resetMutation = useMutation({
+    // Empty request -> every branding column is nulled out server-side, which the backend
+    // treats as "no branding configured" and the app then renders with its built-in defaults.
+    mutationFn: () => brandingApi.update({}),
+    onSuccess: async () => {
+      setThemeVarsError(null);
+      if (session?.tenantCode) await loadBranding(session.tenantCode);
+    },
+  });
+
+  const handleReset = () => {
+    if (window.confirm(t('pages.branding.confirmReset'))) {
+      resetMutation.mutate();
+    }
+  };
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     let themeVars: Record<string, string> | undefined;
@@ -119,7 +135,11 @@ export function BrandingPage() {
             <Button type="submit" disabled={saveMutation.isPending}>
               {saveMutation.isPending ? t('common.saving') : t('common.save')}
             </Button>
+            <Button type="button" variant="secondary" onClick={handleReset} disabled={resetMutation.isPending}>
+              {resetMutation.isPending ? t('pages.branding.resetting') : t('pages.branding.resetButton')}
+            </Button>
             {saveMutation.isSuccess && <span>{t('pages.branding.saved')}</span>}
+            {resetMutation.isSuccess && <span>{t('pages.branding.resetDone')}</span>}
           </div>
         </form>
       </Card>

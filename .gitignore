@@ -5,3 +5,5 @@ dist-ssr
 .env
 .env.local
 npm-debug.log*
+*.log
+.claude/

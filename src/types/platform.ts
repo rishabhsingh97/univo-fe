@@ -34,3 +34,13 @@ export interface UpdateTenantStatusRequest {
 export interface UpdateTenantModulesRequest {
   modules: Record<string, boolean>;
 }
+
+export interface ModuleResponse {
+  moduleKey: string;
+  label: string;
+}
+
+export interface CreateModuleRequest {
+  moduleKey: string;
+  label: string;
+}

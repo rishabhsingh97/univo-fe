@@ -1,0 +1,62 @@
+.help-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.help-row {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.help-row:last-child {
+  border-bottom: none;
+}
+
+.help-row-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.help-row-desc {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.help-roadmap-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.help-note-group-header {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-alt);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+}
+
+.help-note-list {
+  list-style: disc;
+  margin: 0;
+  padding: var(--space-3) var(--space-4) var(--space-4) calc(var(--space-4) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.help-note-list:last-child {
+  border-bottom: none;
+}

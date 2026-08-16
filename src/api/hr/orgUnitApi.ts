@@ -2,7 +2,7 @@ import { apiClient } from '../client';
 import type { PageResponse } from '../../types/common';
 import type { OrgUnitRequest, OrgUnitResponse } from '../../types/hr';
 
-const BASE = '/api/hr/org-units';
+const BASE = '/api/v1/hr/org-units';
 
 export const orgUnitApi = {
   list: (page = 0, size = 20, sort?: string) =>

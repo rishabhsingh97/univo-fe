@@ -2,7 +2,7 @@ import { apiClient } from '../client';
 import type { PageResponse } from '../../types/common';
 import type { SalaryStructureRequest, SalaryStructureResponse } from '../../types/payroll';
 
-const BASE = '/api/payroll/salary-structures';
+const BASE = '/api/v1/hr/salary-structures';
 
 export const salaryStructureApi = {
   list: (page = 0, size = 20, sort?: string) =>

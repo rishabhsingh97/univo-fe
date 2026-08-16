@@ -2,7 +2,7 @@ import { apiClient } from '../client';
 import type { PageResponse } from '../../types/common';
 import type { PayrollRunRequest, PayrollRunResponse, PayslipResponse } from '../../types/payroll';
 
-const BASE = '/api/payroll/runs';
+const BASE = '/api/v1/hr/runs';
 
 export const payrollRunApi = {
   list: (page = 0, size = 20, sort?: string) =>
@@ -19,7 +19,7 @@ export const payrollRunApi = {
 
   payslipsForEmployee: (employeeId: number, page = 0, size = 20, sort?: string) =>
     apiClient
-      .get<PageResponse<PayslipResponse>>(`/api/payroll/employees/${employeeId}/payslips`, {
+      .get<PageResponse<PayslipResponse>>(`/api/v1/hr/employees/${employeeId}/payslips`, {
         params: { page, size, sort },
       })
       .then((res) => res.data),

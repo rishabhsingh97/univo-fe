@@ -91,9 +91,9 @@ export function Topbar() {
         <IconMenuButton icon={IconBell} label="Notifications">
           <div className="icon-popover-empty">No new notifications</div>
         </IconMenuButton>
-        <IconMenuButton icon={IconHelp} label="Help">
-          <div className="icon-popover-empty">Need help? Contact your administrator.</div>
-        </IconMenuButton>
+        <button type="button" className="icon-btn" aria-label="Help" onClick={() => navigate('/help')}>
+          <IconHelp />
+        </button>
         <ProfileMenu username={session?.username} initials={initials} onLogout={logout} />
       </div>
     </header>

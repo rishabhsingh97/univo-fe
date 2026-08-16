@@ -21,12 +21,15 @@ export interface OrgUnitResponse {
 export interface DesignationRequest {
   title: string;
   code: string;
+  gradeId: number;
 }
 
 export interface DesignationResponse {
   id: number;
   title: string;
   code: string;
+  gradeId: number | null;
+  gradeName: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,16 +37,39 @@ export interface DesignationResponse {
 export interface GradeRequest {
   name: string;
   code: string;
-  rank: number;
+  level: number;
 }
 
 export interface GradeResponse {
   id: number;
   name: string;
   code: string;
-  rank: number;
+  level: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface LocationRequest {
+  name: string;
+  code: string;
+}
+
+export interface LocationResponse {
+  id: number;
+  name: string;
+  code: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EmployeeDocumentResponse {
+  id: number;
+  employeeId: number;
+  documentType: string;
+  originalFileName: string;
+  contentType: string;
+  fileSize: number;
+  createdAt: string;
 }
 
 export type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
@@ -57,7 +83,7 @@ export interface EmployeeRequest {
   phone?: string;
   orgUnitId?: number | null;
   designationId?: number | null;
-  gradeId?: number | null;
+  locationId?: number | null;
   managerId?: number | null;
   employmentType?: EmploymentType;
   dateOfJoining: string;
@@ -86,6 +112,8 @@ export interface EmployeeResponse {
   designationTitle: string | null;
   gradeId: number | null;
   gradeName: string | null;
+  locationId: number | null;
+  locationName: string | null;
   managerId: number | null;
   managerName: string | null;
   employmentType: EmploymentType;

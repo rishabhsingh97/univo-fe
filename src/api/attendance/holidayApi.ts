@@ -2,7 +2,7 @@ import { apiClient } from '../client';
 import type { PageResponse } from '../../types/common';
 import type { HolidayRequest, HolidayResponse } from '../../types/attendance';
 
-const BASE = '/api/attendance/holidays';
+const BASE = '/api/v1/hr/holidays';
 
 export const holidayApi = {
   list: (page = 0, size = 20, sort?: string) =>

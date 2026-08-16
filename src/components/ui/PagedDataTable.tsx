@@ -28,14 +28,14 @@ export function PagedDataTable<T>({
   queryKey,
   fetchPage,
   getRowKey,
-  pageSize = 20,
+  pageSize = 10,
   emptyMessage,
   maxHeight,
 }: PagedDataTableProps<T>) {
   const table = usePagedTable(pageSize);
 
   const { data, isLoading } = useQuery({
-    queryKey: [...queryKey, table.page, table.sortParam],
+    queryKey: [...queryKey, table.page, table.size, table.sortParam],
     queryFn: () => fetchPage(table.page, table.size, table.sortParam),
   });
 

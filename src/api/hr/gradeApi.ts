@@ -2,7 +2,7 @@ import { apiClient } from '../client';
 import type { PageResponse } from '../../types/common';
 import type { GradeRequest, GradeResponse } from '../../types/hr';
 
-const BASE = '/api/hr/grades';
+const BASE = '/api/v1/hr/grades';
 
 export const gradeApi = {
   list: (page = 0, size = 50, sort?: string) =>

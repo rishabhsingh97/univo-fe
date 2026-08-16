@@ -16,6 +16,15 @@ export function Sidebar() {
 
   const modules = useMemo(() => buildNavModules(t), [t]);
 
+  // A leaf whose own path is a prefix of a sibling's (e.g. "/payroll" vs.
+  // "/payroll/salary-structures") must use NavLink's `end` match, or React Router highlights
+  // both at once while viewing the more specific route.
+  const allLeafPaths = useMemo(
+    () => modules.flatMap((mod) => mod.groups.flatMap((group) => group.items.map((item) => item.to))),
+    [modules],
+  );
+  const isPrefixOfSibling = (to: string) => allLeafPaths.some((path) => path !== to && path.startsWith(`${to}/`));
+
   const visibleModules = useMemo(
     () =>
       modules
@@ -23,6 +32,7 @@ export function Sidebar() {
         .map((mod) => ({
           ...mod,
           groups: mod.groups
+            .filter((group) => !session?.disabledModules?.includes(group.moduleKey ?? mod.key))
             .map((group) => ({ ...group, items: group.items.filter((leaf) => canSeeLeaf(leaf, hasAnyPermission)) }))
             .filter((group) => group.items.length > 0),
         }))
@@ -87,7 +97,6 @@ export function Sidebar() {
             </span>
             <span className="switch-label">
               <span className="switch-name">{activeModule.label}</span>
-              <span className="switch-tag">Current module</span>
             </span>
             <IconChevronDown className={`switch-chevron${switcherOpen ? ' open' : ''}`} />
           </button>
@@ -174,7 +183,12 @@ export function Sidebar() {
             </summary>
             <div className="nav-sublist">
               {group.items.map((item) => (
-                <NavLink key={item.to} to={item.to} className={({ isActive }) => `nav-sublink${isActive ? ' active' : ''}`}>
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={isPrefixOfSibling(item.to)}
+                  className={({ isActive }) => `nav-sublink${isActive ? ' active' : ''}`}
+                >
                   <span className="dot" />
                   {item.label}
                 </NavLink>

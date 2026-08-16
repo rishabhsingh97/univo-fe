@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import {
   IconPeople,
   IconOrgUnits,
+  IconLocation,
+  IconDocument,
   IconClock,
   IconLeave,
   IconHoliday,
@@ -29,6 +31,11 @@ export interface NavLeaf {
 export interface NavGroup {
   label: string;
   items: NavLeaf[];
+  /** Tenant-module key gating this group's visibility (see TenantModuleService.MODULE_KEYS on
+   * the backend). Defaults to the parent module's own key - set this when a group lives inside
+   * a different module than the plan-gated feature it represents, e.g. the Payroll group nested
+   * under the "hr" module but still independently toggleable per tenant. */
+  moduleKey?: string;
 }
 
 export interface NavModule {
@@ -53,12 +60,16 @@ export function buildNavModules(t: T): NavModule[] {
           label: 'Workforce',
           items: [
             { to: '/employees', label: t('nav.employees'), icon: IconPeople, anyOf: ['hr.employee.read'] },
+            { to: '/departments', label: t('nav.departments'), icon: IconOrgUnits, anyOf: ['hr.orgunit.read'] },
             { to: '/org-units', label: t('nav.orgUnits'), icon: IconOrgUnits, anyOf: ['hr.orgunit.read'] },
+            { to: '/designations', label: t('nav.designations'), icon: IconOrgUnits, anyOf: ['hr.designation.read'] },
+            { to: '/grades', label: t('nav.grades'), icon: IconOrgUnits, anyOf: ['hr.grade.read'] },
+            { to: '/locations', label: t('nav.locations'), icon: IconLocation, anyOf: ['hr.location.read'] },
             {
-              to: '/designations-grades',
-              label: t('nav.designationsGrades'),
-              icon: IconOrgUnits,
-              anyOf: ['hr.designation.read', 'hr.grade.read'],
+              to: '/employee-documents',
+              label: t('nav.employeeDocuments'),
+              icon: IconDocument,
+              anyOf: ['hr.document.read'],
             },
           ],
         },
@@ -70,15 +81,10 @@ export function buildNavModules(t: T): NavModule[] {
             { to: '/holidays', label: t('nav.holidays'), icon: IconHoliday, anyOf: ['holiday.read'] },
           ],
         },
-      ],
-    },
-    {
-      key: 'payroll',
-      label: 'Payroll',
-      icon: IconPayroll,
-      groups: [
         {
           label: 'Payroll',
+          // No moduleKey override - payroll shares the "hr" tenant-module toggle now (see
+          // TenantModuleService.MODULE_KEYS on the backend), it isn't its own flag.
           items: [
             { to: '/payroll', label: t('nav.payroll'), icon: IconPayroll, anyOf: ['payroll.run.read'] },
             {
@@ -167,6 +173,6 @@ export function buildSearchIndex(
 ): NavLeaf[] {
   return buildNavModules(t)
     .filter((mod) => !disabledModules.includes(mod.key))
-    .flatMap((mod) => mod.groups.flatMap((group) => group.items))
+    .flatMap((mod) => mod.groups.filter((group) => !disabledModules.includes(group.moduleKey ?? mod.key)).flatMap((group) => group.items))
     .filter((leaf) => canSeeLeaf(leaf, hasAnyPermission));
 }

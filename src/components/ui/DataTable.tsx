@@ -34,7 +34,11 @@ export interface DataTablePagination {
    * unsorted column headers. */
   sort?: DataTableSort | null;
   onSortChange?: (key: string) => void;
+  /** Omit to hide the page-size selector entirely (a page not wired up for it). */
+  onSizeChange?: (size: number) => void;
 }
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 /**
  * One generic table every list page uses instead of hand-rolling <table> markup per page -
@@ -118,37 +122,46 @@ export function DataTable<T>({
           </tbody>
         </table>
       </div>
-      {pagination && pagination.totalElements > 0 && pagination.totalPages > 1 && (
+      {pagination && pagination.totalElements > 0 && (
         <div className="table-pagination">
-          <span className="table-pagination-summary">
-            {t('table.pageSummary')
-              .replace('{from}', String(pagination.page * pagination.size + 1))
-              .replace('{to}', String(Math.min(pagination.page * pagination.size + rows.length, pagination.totalElements)))
-              .replace('{total}', String(pagination.totalElements))}
-          </span>
-          <div className="table-pagination-controls">
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={pagination.page <= 0}
-              onClick={() => pagination.onPageChange(pagination.page - 1)}
-            >
-              {t('table.previous')}
-            </Button>
-            <PageJumpInput
-              page={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={pagination.onPageChange}
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={pagination.page >= pagination.totalPages - 1}
-              onClick={() => pagination.onPageChange(pagination.page + 1)}
-            >
-              {t('table.next')}
-            </Button>
-          </div>
+          {pagination.onSizeChange ? (
+            <label className="table-pagination-size">
+              {t('table.rowsPerPage')}
+              <select
+                className="table-pagination-size-select"
+                value={pagination.size}
+                onChange={(e) => pagination.onSizeChange?.(Number(e.target.value))}
+              >
+                {(PAGE_SIZE_OPTIONS.includes(pagination.size) ? PAGE_SIZE_OPTIONS : [...PAGE_SIZE_OPTIONS, pagination.size].sort((a, b) => a - b))
+                  .map((size) => <option key={size} value={size}>{size}</option>)}
+              </select>
+            </label>
+          ) : <span />}
+          {pagination.totalPages > 1 && (
+            <div className="table-pagination-controls">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={pagination.page <= 0}
+                onClick={() => pagination.onPageChange(pagination.page - 1)}
+              >
+                {t('table.previous')}
+              </Button>
+              <PageJumpInput
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                onPageChange={pagination.onPageChange}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={pagination.page >= pagination.totalPages - 1}
+                onClick={() => pagination.onPageChange(pagination.page + 1)}
+              >
+                {t('table.next')}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

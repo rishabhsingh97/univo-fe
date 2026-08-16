@@ -2,7 +2,7 @@ import { apiClient } from '../client';
 import type { PageResponse } from '../../types/common';
 import type { EmployeeRequest, EmployeeResponse, ReassignManagerRequest } from '../../types/hr';
 
-const BASE = '/api/hr/employees';
+const BASE = '/api/v1/hr/employees';
 
 export const employeeApi = {
   list: (page = 0, size = 20, sort?: string) =>

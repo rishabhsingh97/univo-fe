@@ -10,8 +10,9 @@ import type { PageResponse } from '../types/common';
  * Usage: `const table = usePagedTable(20)`, pass `table.page/table.size/table.sortParam` into
  * the list query, then `pagination={table.paginationFor(data)}` straight onto <DataTable>.
  */
-export function usePagedTable(size = 20) {
+export function usePagedTable(initialSize = 20) {
   const [page, setPage] = useState(0);
+  const [size, setSize] = useState(initialSize);
   const [sort, setSort] = useState<DataTableSort | null>(null);
 
   const sortParam = sort ? `${sort.key},${sort.direction}` : undefined;
@@ -25,15 +26,21 @@ export function usePagedTable(size = 20) {
     setPage(0);
   };
 
+  const onSizeChange = (newSize: number) => {
+    setSize(newSize);
+    setPage(0);
+  };
+
   const paginationFor = <T,>(data: PageResponse<T> | undefined): DataTablePagination => ({
     page,
     size,
     totalPages: data?.totalPages ?? 0,
     totalElements: data?.totalElements ?? 0,
     onPageChange: setPage,
+    onSizeChange,
     sort,
     onSortChange,
   });
 
-  return { page, size, sort, sortParam, onPageChange: setPage, onSortChange, paginationFor };
+  return { page, size, sort, sortParam, onPageChange: setPage, onSizeChange, onSortChange, paginationFor };
 }

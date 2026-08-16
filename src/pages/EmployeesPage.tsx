@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { employeeApi } from '../api/hr/employeeApi';
 import { designationApi } from '../api/hr/designationApi';
-import { gradeApi } from '../api/hr/gradeApi';
 import { useLocale } from '../context/LocaleContext';
 import { useFieldLabels } from '../hooks/useFieldLabels';
 import type { EmployeeRequest, EmployeeResponse, EmploymentType } from '../types/hr';
@@ -31,7 +30,7 @@ export function EmployeesPage() {
   // since a manager/designation/grade selector needs every option, not just the visible page.
   const { data: allEmployees } = useQuery({ queryKey: ['employees', 'select'], queryFn: () => employeeApi.list(0, 200) });
   const { data: designations } = useQuery({ queryKey: ['designations', 'select'], queryFn: () => designationApi.list(0, 200) });
-  const { data: grades } = useQuery({ queryKey: ['grades', 'select'], queryFn: () => gradeApi.list(0, 200) });
+  const selectedDesignation = designations?.content.find((d) => d.id === form.designationId);
 
   const createMutation = useMutation({
     mutationFn: (request: EmployeeRequest) => employeeApi.create(request),
@@ -102,11 +101,7 @@ export function EmployeesPage() {
               {designations?.content.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
             </SelectField>
           )}
-          <SelectField label={t('fields.grade')} value={form.gradeId ?? ''}
-            onChange={(e) => setForm({ ...form, gradeId: e.target.value ? Number(e.target.value) : null })}>
-            <option value="">{t('common.none')}</option>
-            {grades?.content.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-          </SelectField>
+          <TextField label={t('fields.grade')} value={selectedDesignation?.gradeName ?? t('common.none')} readOnly />
           <SelectField label={t('fields.manager')} value={form.managerId ?? ''}
             onChange={(e) => setForm({ ...form, managerId: e.target.value ? Number(e.target.value) : null })}>
             <option value="">{t('common.none')}</option>

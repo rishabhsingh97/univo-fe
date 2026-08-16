@@ -48,6 +48,24 @@ export function IconOrgUnits(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function IconLocation(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21Z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </Icon>
+  );
+}
+
+export function IconDocument(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M6 3h8l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+      <path d="M14 3v5h5M9 13h6M9 17h6" />
+    </Icon>
+  );
+}
+
 export function IconClock(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

@@ -2,7 +2,7 @@ import { apiClient } from '../client';
 import type { PageResponse } from '../../types/common';
 import type { DesignationRequest, DesignationResponse } from '../../types/hr';
 
-const BASE = '/api/hr/designations';
+const BASE = '/api/v1/hr/designations';
 
 export const designationApi = {
   list: (page = 0, size = 50, sort?: string) =>

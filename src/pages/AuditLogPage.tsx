@@ -1,12 +1,12 @@
 import { auditLogApi } from '../api/admin/auditLogApi';
-import { useLocale } from '../context/LocaleContext';
 import { useTimezone } from '../hooks/useTimezone';
-import { PageHeader, PagedDataTable } from '../components/ui';
+import { PagedDataTable } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
 import type { AuditLogEntryResponse } from '../types/admin';
 
+/** No title of its own - only rendered as a tab inside AdministrationPage, whose tab label
+ * already says "Audit Log". */
 export function AuditLogPage() {
-  const { t } = useLocale();
   const { format } = useTimezone();
 
   const columns: DataTableColumn<AuditLogEntryResponse>[] = [
@@ -17,10 +17,5 @@ export function AuditLogPage() {
     { key: 'details', header: 'Details', render: (e) => e.details ?? '-' },
   ];
 
-  return (
-    <div>
-      <PageHeader title={t('pages.auditLog.title')} description={t('pages.auditLog.description')} />
-      <PagedDataTable columns={columns} queryKey={['audit-log']} fetchPage={auditLogApi.list} getRowKey={(e) => e.id} />
-    </div>
-  );
+  return <PagedDataTable columns={columns} queryKey={['audit-log']} fetchPage={auditLogApi.list} getRowKey={(e) => e.id} />;
 }

@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import './ui.css';
 import { Spinner } from './Spinner';
 import { Button } from './Button';
+import { ActionMenu, deleteAction, editAction, viewAction, type ActionMenuItem } from './ActionMenu';
 import { useLocale } from '../../context/LocaleContext';
 
 export interface DataTableColumn<T> {
@@ -48,6 +49,11 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
  * `position: sticky`) instead of pushing the rest of the page down - important once a table
  * has enough rows to matter. Pass `pagination` (built from a PageResponse) for pages backed by
  * a paged API; omitting it renders a plain, unpaginated table as before.
+ *
+ * Row actions (View/Edit/Delete plus anything page-specific) are built in here from
+ * onView/onEdit/onDelete/extraActions instead of the page defining its own "actions" column -
+ * that column is appended automatically whenever at least one of those is passed, so a plain
+ * CRUD page never needs to import ActionMenu/editAction/etc itself.
  */
 export function DataTable<T>({
   columns,
@@ -57,6 +63,10 @@ export function DataTable<T>({
   getRowKey,
   maxHeight = '60vh',
   pagination,
+  onView,
+  onEdit,
+  onDelete,
+  extraActions,
 }: {
   columns: DataTableColumn<T>[];
   rows: T[];
@@ -65,23 +75,55 @@ export function DataTable<T>({
   getRowKey: (row: T) => string | number;
   maxHeight?: string;
   pagination?: DataTablePagination;
+  onView?: (row: T) => void;
+  onEdit?: (row: T) => void;
+  /** Wrapped in a window.confirm(t('common.confirmDelete')) automatically. */
+  onDelete?: (row: T) => void;
+  /** Anything beyond View/Edit/Delete - approve/reject, generate credentials, ... - collapses
+   * into the row's "⋮" dropdown alongside whichever of those three are present. */
+  extraActions?: (row: T) => ActionMenuItem[];
 }) {
   const { t } = useLocale();
   const resolvedEmptyMessage = emptyMessage ?? t('table.empty');
+
+  const hasRowActions = Boolean(onView || onEdit || onDelete || extraActions);
+  const allColumns: DataTableColumn<T>[] = hasRowActions
+    ? [
+        ...columns,
+        {
+          key: 'actions',
+          header: t('common.actions'),
+          render: (row: T) => {
+            const items: ActionMenuItem[] = [];
+            if (onView) items.push(viewAction(t('common.view'), () => onView(row)));
+            if (onEdit) items.push(editAction(t('common.edit'), () => onEdit(row)));
+            if (onDelete) {
+              items.push(
+                deleteAction(t('common.delete'), () => window.confirm(t('common.confirmDelete')) && onDelete(row)),
+              );
+            }
+            if (extraActions) items.push(...extraActions(row));
+            return <ActionMenu items={items} />;
+          },
+        },
+      ]
+    : columns;
+
   return (
     <div className="table-shell">
       <div className="table-wrapper" style={{ maxHeight }}>
         <table className="table">
           <thead>
             <tr>
-              {columns.map((col) => {
+              {allColumns.map((col) => {
                 const sortable = Boolean(col.sortKey && pagination?.onSortChange);
                 const active = sortable && pagination?.sort?.key === col.sortKey;
+                const stickyClass = col.key === 'actions' ? 'table-cell-sticky-right' : undefined;
                 if (!sortable) {
-                  return <th key={col.key}>{col.header}</th>;
+                  return <th key={col.key} className={stickyClass}>{col.header}</th>;
                 }
                 return (
-                  <th key={col.key}>
+                  <th key={col.key} className={stickyClass}>
                     <button
                       type="button"
                       className={`table-sort-button${active ? ' active' : ''}`}
@@ -100,21 +142,25 @@ export function DataTable<T>({
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={columns.length} style={{ textAlign: 'center', padding: '32px' }}>
-                  <Spinner />
+                <td colSpan={allColumns.length} style={{ height: 240 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                    <Spinner />
+                  </div>
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>
+                <td colSpan={allColumns.length} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>
                   {resolvedEmptyMessage}
                 </td>
               </tr>
             ) : (
               rows.map((row) => (
                 <tr key={getRowKey(row)}>
-                  {columns.map((col) => (
-                    <td key={col.key}>{col.render(row)}</td>
+                  {allColumns.map((col) => (
+                    <td key={col.key} className={col.key === 'actions' ? 'table-cell-sticky-right' : undefined}>
+                      {col.render(row)}
+                    </td>
                   ))}
                 </tr>
               ))
@@ -122,7 +168,7 @@ export function DataTable<T>({
           </tbody>
         </table>
       </div>
-      {pagination && pagination.totalElements > 0 && (
+      {pagination && (
         <div className="table-pagination">
           {pagination.onSizeChange ? (
             <label className="table-pagination-size">
@@ -137,8 +183,7 @@ export function DataTable<T>({
               </select>
             </label>
           ) : <span />}
-          {pagination.totalPages > 1 && (
-            <div className="table-pagination-controls">
+          <div className="table-pagination-controls">
               <Button
                 type="button"
                 variant="secondary"
@@ -149,7 +194,7 @@ export function DataTable<T>({
               </Button>
               <PageJumpInput
                 page={pagination.page}
-                totalPages={pagination.totalPages}
+                totalPages={Math.max(pagination.totalPages, 1)}
                 onPageChange={pagination.onPageChange}
               />
               <Button
@@ -160,8 +205,7 @@ export function DataTable<T>({
               >
                 {t('table.next')}
               </Button>
-            </div>
-          )}
+          </div>
         </div>
       )}
     </div>

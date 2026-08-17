@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
 import { buildSearchIndex, type NavLeaf } from './navConfig';
-import { IconSearch, IconBell, IconHelp, IconLogout, IconGeneral, IconPeople } from './navIcons';
+import { IconSearch, IconBell, IconHelp, IconLogout, IconGeneral, IconPeople, IconLock } from './navIcons';
 import './layout.css';
 
 const MAX_RESULTS = 8;
@@ -17,6 +17,18 @@ export function Topbar() {
     () => buildSearchIndex(t, hasAnyPermission, session?.disabledModules),
     [t, hasAnyPermission, session?.disabledModules],
   );
+
+  // Administration has no sidebar entries of its own (see navConfig.ts / AdministrationPage.tsx)
+  // - it's a single popup opened from this header icon instead. Only show the icon if the user
+  // can actually see at least one of Administration's four sections, so it never opens to a
+  // "you don't have access" screen.
+  const canSeeAdmin = hasAnyPermission([
+    'audit.log.read',
+    'admin.branding.manage',
+    'admin.role.manage',
+    'admin.user.manage',
+    'admin.fieldconfig.manage',
+  ]);
 
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -91,6 +103,11 @@ export function Topbar() {
         <IconMenuButton icon={IconBell} label="Notifications">
           <div className="icon-popover-empty">No new notifications</div>
         </IconMenuButton>
+        {canSeeAdmin && (
+          <button type="button" className="icon-btn" aria-label="Administration" onClick={() => navigate('/admin')}>
+            <IconGeneral />
+          </button>
+        )}
         <button type="button" className="icon-btn" aria-label="Help" onClick={() => navigate('/help')}>
           <IconHelp />
         </button>
@@ -153,6 +170,17 @@ function ProfileMenu({
           >
             <IconGeneral className="link-icon" />
             {t('topbar.myPreferences')}
+          </button>
+          <button
+            type="button"
+            className="profile-menu-item"
+            onClick={() => {
+              setOpen(false);
+              navigate('/change-password');
+            }}
+          >
+            <IconLock className="link-icon" />
+            {t('topbar.changePassword')}
           </button>
           <button
             type="button"

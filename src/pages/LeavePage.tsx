@@ -4,8 +4,8 @@ import { leaveApi } from '../api/attendance/leaveApi';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
 import { useTimezone } from '../hooks/useTimezone';
-import { ApprovalActions, Button, EmployeeSelect, Modal, PageHeader, PagedDataTable, SelectField, TextField } from '../components/ui';
-import type { DataTableColumn } from '../components/ui';
+import { Badge, Button, EmployeeSelect, Modal, PageHeader, PagedDataTable, SelectField, TextField, statusTone } from '../components/ui';
+import type { ActionMenuItem, DataTableColumn } from '../components/ui';
 import type { LeaveApplicationRequest, LeaveApplicationResponse, LeaveStatus, LeaveType } from '../types/attendance';
 
 const LEAVE_TYPES: LeaveType[] = ['ANNUAL', 'SICK', 'UNPAID', 'OTHER'];
@@ -60,26 +60,18 @@ export function LeavePage() {
     {
       key: 'status',
       header: t('fields.status'),
-      render: (r) => (
-        <ApprovalActions
-          status={r.status}
-          canManage={canManage}
-          onApprove={() => statusMutation.mutate({ id: r.id, status: 'APPROVED' })}
-          onReject={() => statusMutation.mutate({ id: r.id, status: 'REJECTED' })}
-        />
-      ),
-    },
-    {
-      key: 'actions',
-      header: t('common.actions'),
-      render: (r) =>
-        canDelete ? (
-          <Button variant="danger" onClick={() => window.confirm(t('common.confirmDelete')) && deleteMutation.mutate(r.id)}>
-            {t('common.delete')}
-          </Button>
-        ) : null,
+      render: (r) => <Badge tone={statusTone(r.status)}>{r.status}</Badge>,
+      sortKey: 'status',
     },
   ];
+
+  const extraActions = (r: LeaveApplicationResponse): ActionMenuItem[] =>
+    r.status === 'PENDING' && canManage
+      ? [
+          { label: t('common.approve'), onClick: () => statusMutation.mutate({ id: r.id, status: 'APPROVED' }) },
+          { label: t('common.reject'), onClick: () => statusMutation.mutate({ id: r.id, status: 'REJECTED' }) },
+        ]
+      : [];
 
   return (
     <div>
@@ -109,7 +101,14 @@ export function LeavePage() {
         </Modal>
       )}
 
-      <PagedDataTable columns={columns} queryKey={['leave-applications']} fetchPage={leaveApi.list} getRowKey={(r) => r.id} />
+      <PagedDataTable
+        columns={columns}
+        queryKey={['leave-applications']}
+        fetchPage={leaveApi.list}
+        getRowKey={(r) => r.id}
+        onDelete={canDelete ? (r) => deleteMutation.mutate(r.id) : undefined}
+        extraActions={extraActions}
+      />
     </div>
   );
 }

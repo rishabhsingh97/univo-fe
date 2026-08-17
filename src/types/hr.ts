@@ -116,6 +116,9 @@ export interface EmployeeResponse {
   locationName: string | null;
   managerId: number | null;
   managerName: string | null;
+  managerEmail: string | null;
+  hasUserAccount: boolean;
+  username: string | null;
   employmentType: EmploymentType;
   dateOfJoining: string;
   confirmationDate: string | null;
@@ -134,4 +137,9 @@ export interface EmployeeResponse {
 
 export interface ReassignManagerRequest {
   managerId: number | null;
+}
+
+export interface GenerateCredentialsResponse {
+  username: string;
+  temporaryPassword: string;
 }

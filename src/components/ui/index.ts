@@ -12,3 +12,5 @@ export { PagedDataTable } from './PagedDataTable';
 export { Modal } from './Modal';
 export { EmployeeSelect } from './EmployeeSelect';
 export { ApprovalActions } from './ApprovalActions';
+export { ActionMenu, EditIcon, DeleteIcon, ViewIcon, viewAction, editAction, deleteAction } from './ActionMenu';
+export type { ActionMenuItem } from './ActionMenu';

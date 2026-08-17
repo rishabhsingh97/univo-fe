@@ -330,6 +330,13 @@
   transition: transform 0.15s ease;
 }
 
+.nav-group summary .group-icon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
 .nav-group[open] summary .chevron {
   transform: rotate(90deg);
 }
@@ -593,4 +600,71 @@
   overflow-y: auto;
   flex: 1;
   min-height: 0;
+}
+
+/* ---------- Popup pages ---------- */
+/* Pages with no sidebar entry of their own (My Details, Change Password, My Preferences, Help -
+ * all reached from the topbar, not the module nav) render inside this instead of the plain
+ * main-content column, so they read as "a thing you opened" rather than "a place you navigated
+ * to" - closing returns you to wherever you were, same as any other popup. */
+.popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 20, 0.5);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fade-in 0.15s ease;
+}
+
+.popup-panel {
+  width: 80vw;
+  height: 80vh;
+  max-width: 1320px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  box-shadow: var(--shadow-lg);
+  animation: modal-in 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.popup-close {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: grid;
+  place-items: center;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.popup-close:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.popup-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-6);
+  position: relative;
+}
+
+@media (max-width: 860px) {
+  .popup-panel {
+    width: 96vw;
+    height: 92vh;
+  }
 }

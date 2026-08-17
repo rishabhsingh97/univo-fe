@@ -2,6 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Sets data-theme before first paint so the page never briefly renders in the wrong
+      // theme while React mounts - ThemeContext.tsx's useEffect runs too late to prevent that
+      // flash on its own. Keep this in sync with ThemeContext's storage key/fallback logic.
+      (function () {
+        try {
+          var stored = localStorage.getItem('erp.theme');
+          var theme =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      /* Paints the right background before theme.css even loads - that stylesheet is imported
+       * as a JS module side-effect in main.tsx, so Vite injects it asynchronously and there's a
+       * brief real gap (worse in dev) where the page would otherwise be default browser white
+       * no matter which theme is set. Keep these two values in sync with theme.css's
+       * --color-bg / [data-theme="dark"] --color-bg. */
+      html {
+        background: #eceff6;
+      }
+      html[data-theme='dark'] {
+        background: #0f1116;
+      }
+    </style>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>erp-frontend</title>

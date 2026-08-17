@@ -4,22 +4,22 @@
  * page inventing its own colors.
  */
 :root {
-  --color-bg: #f5f6fb;
+  --color-bg: #eceff6;
   --color-surface: #ffffff;
-  --color-surface-alt: #f0f2f8;
-  --color-border: #e2e5ee;
-  --color-text: #171a21;
-  --color-text-muted: #666d80;
-  --color-primary: #3b5fe0;
-  --color-primary-hover: #2f4dc4;
+  --color-surface-alt: #e6e9f2;
+  --color-border: #ccd1e0;
+  --color-text: #10121a;
+  --color-text-muted: #474d61;
+  --color-primary: #2f4fdb;
+  --color-primary-hover: #2540b0;
   --color-primary-contrast: #ffffff;
-  --color-danger: #e0332b;
-  --color-danger-hover: #c22921;
-  --color-danger-bg: #fef2f2;
-  --color-success: #0f9d68;
-  --color-success-bg: #eafbf3;
-  --color-warning: #b5590a;
-  --color-warning-bg: #fff7e8;
+  --color-danger: #cc2318;
+  --color-danger-hover: #a81c13;
+  --color-danger-bg: #fbe7e6;
+  --color-success: #0b7d52;
+  --color-success-bg: #dcf3e9;
+  --color-warning: #9c4907;
+  --color-warning-bg: #fbead0;
 
   /*
    * Derived, not hardcoded: --color-primary/-hover are the two knobs tenant branding
@@ -32,12 +32,12 @@
   --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
 
   --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
+  --space-2: 6px;
+  --space-3: 10px;
+  --space-4: 14px;
+  --space-5: 20px;
+  --space-6: 28px;
+  --space-7: 40px;
 
   --radius-sm: 8px;
   --radius-md: 12px;

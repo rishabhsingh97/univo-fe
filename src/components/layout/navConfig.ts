@@ -3,7 +3,6 @@ import {
   IconPeople,
   IconOrgUnits,
   IconLocation,
-  IconDocument,
   IconClock,
   IconLeave,
   IconHoliday,
@@ -11,12 +10,7 @@ import {
   IconSalary,
   IconFinance,
   IconTax,
-  IconAudit,
-  IconShield,
-  IconGeneral,
-  IconBranding,
-  IconAccess,
-  IconFields,
+  IconCheck,
 } from './navIcons';
 
 export interface NavLeaf {
@@ -36,6 +30,10 @@ export interface NavGroup {
    * a different module than the plan-gated feature it represents, e.g. the Payroll group nested
    * under the "hr" module but still independently toggleable per tenant. */
   moduleKey?: string;
+  /** Optional icon shown next to the group's own header in the sidebar (see Sidebar.tsx's
+   * nav-group summary) - distinct from the parent NavModule's icon, which is what the module
+   * switcher dropdown renders. */
+  icon?: (props: { className?: string }) => ReactNode;
 }
 
 export interface NavModule {
@@ -60,25 +58,52 @@ export function buildNavModules(t: T): NavModule[] {
           label: 'Workforce',
           items: [
             { to: '/employees', label: t('nav.employees'), icon: IconPeople, anyOf: ['hr.employee.read'] },
-            { to: '/departments', label: t('nav.departments'), icon: IconOrgUnits, anyOf: ['hr.orgunit.read'] },
             { to: '/org-units', label: t('nav.orgUnits'), icon: IconOrgUnits, anyOf: ['hr.orgunit.read'] },
             { to: '/designations', label: t('nav.designations'), icon: IconOrgUnits, anyOf: ['hr.designation.read'] },
             { to: '/grades', label: t('nav.grades'), icon: IconOrgUnits, anyOf: ['hr.grade.read'] },
             { to: '/locations', label: t('nav.locations'), icon: IconLocation, anyOf: ['hr.location.read'] },
-            {
-              to: '/employee-documents',
-              label: t('nav.employeeDocuments'),
-              icon: IconDocument,
-              anyOf: ['hr.document.read'],
-            },
           ],
         },
         {
           label: 'Time & Leave',
           items: [
             { to: '/attendance', label: t('nav.attendance'), icon: IconClock, anyOf: ['attendance.read'] },
+            { to: '/shifts', label: t('nav.shifts'), icon: IconClock, anyOf: ['shift.read'] },
+            { to: '/roster', label: t('nav.roster'), icon: IconClock, anyOf: ['roster.read'] },
+            {
+              to: '/attendance-regularization',
+              label: t('nav.regularization'),
+              icon: IconClock,
+              anyOf: ['regularization.read'],
+            },
+            { to: '/overtime', label: t('nav.overtime'), icon: IconClock, anyOf: ['overtime.read'] },
             { to: '/leave', label: t('nav.leave'), icon: IconLeave, anyOf: ['leave.read'] },
             { to: '/holidays', label: t('nav.holidays'), icon: IconHoliday, anyOf: ['holiday.read'] },
+          ],
+        },
+        {
+          label: 'Recruitment',
+          items: [
+            {
+              to: '/recruitment/requisitions',
+              label: t('nav.jobRequisitions'),
+              icon: IconOrgUnits,
+              anyOf: ['recruitment.requisition.read'],
+            },
+            { to: '/recruitment/jobs', label: t('nav.jobs'), icon: IconOrgUnits, anyOf: ['recruitment.job.read'] },
+            {
+              to: '/recruitment/candidates',
+              label: t('nav.candidates'),
+              icon: IconPeople,
+              anyOf: ['recruitment.candidate.read'],
+            },
+            {
+              to: '/recruitment/interviews',
+              label: t('nav.interviews'),
+              icon: IconCheck,
+              anyOf: ['recruitment.interview.read'],
+            },
+            { to: '/recruitment/offers', label: t('nav.offers'), icon: IconSalary, anyOf: ['recruitment.offer.read'] },
           ],
         },
         {
@@ -93,6 +118,30 @@ export function buildNavModules(t: T): NavModule[] {
               icon: IconSalary,
               anyOf: ['payroll.salarystructure.read'],
             },
+            {
+              to: '/payroll/salary-components',
+              label: t('nav.salaryComponents'),
+              icon: IconSalary,
+              anyOf: ['payroll.salarycomponent.read'],
+            },
+          ],
+        },
+        {
+          label: 'Performance',
+          // No `anyOf` yet - this stage has no backend/permissions yet (UI preview with mock
+          // data, see api/hr/performanceApi.ts), so it's visible to any signed-in user for now.
+          // Add `anyOf: ['hr.performance.read']` here once a real permission exists.
+          items: [{ to: '/performance', label: t('nav.performance'), icon: IconCheck }],
+        },
+        {
+          label: 'Career & Exit',
+          // Same as above - Career/Exit/Full & Final/Retirement are UI previews over mock data
+          // until their backends exist (see the HR Lifecycle Ledger at /docs on the docs site).
+          items: [
+            { to: '/career', label: t('nav.career'), icon: IconOrgUnits },
+            { to: '/exit', label: t('nav.exit'), icon: IconPeople },
+            { to: '/full-final', label: t('nav.fullFinal'), icon: IconFinance },
+            { to: '/retirement', label: t('nav.retirement'), icon: IconClock },
           ],
         },
       ],
@@ -116,47 +165,10 @@ export function buildNavModules(t: T): NavModule[] {
         },
       ],
     },
-    {
-      key: 'admin',
-      label: 'Administration',
-      icon: IconShield,
-      groups: [
-        {
-          label: 'Administration',
-          items: [{ to: '/admin/audit-log', label: t('nav.auditLog'), icon: IconAudit, anyOf: ['audit.log.read'] }],
-        },
-      ],
-    },
-    {
-      key: 'settings',
-      label: t('nav.settings'),
-      icon: IconGeneral,
-      groups: [
-        {
-          label: t('nav.settings'),
-          items: [
-            {
-              to: '/settings/branding',
-              label: t('nav.settingsBranding'),
-              icon: IconBranding,
-              anyOf: ['admin.branding.manage'],
-            },
-            {
-              to: '/settings/access',
-              label: t('nav.settingsAccess'),
-              icon: IconAccess,
-              anyOf: ['admin.role.manage', 'admin.user.manage'],
-            },
-            {
-              to: '/settings/fields',
-              label: t('nav.settingsFields'),
-              icon: IconFields,
-              anyOf: ['admin.fieldconfig.manage'],
-            },
-          ],
-        },
-      ],
-    },
+    // No "admin" module here - Administration (audit log, branding, access, fields) has no
+    // sidebar entries or module-switcher presence at all. It's a single popup opened from the
+    // topbar's gear icon (see Topbar.tsx), with those four sections as flat tabs inside
+    // AdministrationPage instead of a nav tree - see PopupLayout in AppRoutes.tsx.
   ];
 }
 

@@ -18,6 +18,15 @@ export interface LoginResponse {
   /** Module keys ("hr" | "payroll" | "finance") a platform admin has turned off for this
    * tenant - hide the corresponding sidebar module. The backend enforces this regardless. */
   disabledModules: string[];
+  /** True if this account was just created/reset by an admin and hasn't set its own password
+   * yet - the frontend must route to the change-password screen and block navigation until
+   * it's cleared. */
+  mustChangePassword: boolean;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface PermissionResponse {

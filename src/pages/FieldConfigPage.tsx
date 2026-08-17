@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fieldConfigApi } from '../api/admin/fieldConfigApi';
 import { useLocale } from '../context/LocaleContext';
-import { Button, Card, DataTable, Modal, PageHeader, SelectField, TextField } from '../components/ui';
+import { ActionMenu, Button, Card, DataTable, Modal, SelectField, TextField, deleteAction, editAction } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
 import type { UiFieldConfigRequest, UiFieldConfigResponse } from '../types/admin';
 
@@ -63,6 +63,8 @@ function toRequest(row: DisplayFieldRow): UiFieldConfigRequest {
   };
 }
 
+/** No title of its own - only rendered as a tab inside AdministrationPage, whose tab label
+ * already says "Fields & Labels". */
 export function FieldConfigPage() {
   const { t } = useLocale();
   const queryClient = useQueryClient();
@@ -126,25 +128,22 @@ export function FieldConfigPage() {
       key: 'actions',
       header: t('common.actions'),
       render: (c) => (
-        <div className="row-actions">
-          <Button variant="secondary" onClick={() => setEditing(c)}>{t('common.edit')}</Button>
-          {c.id !== null && (
-            <Button
-              variant="danger"
-              onClick={() => window.confirm(t('pages.fieldConfig.confirmResetField')) && deleteMutation.mutate(c.id as number)}
-            >
-              {t('pages.fieldConfig.resetField')}
-            </Button>
-          )}
-        </div>
+        <ActionMenu
+          items={[
+            editAction(t('common.edit'), () => setEditing(c)),
+            deleteAction(
+              t('pages.fieldConfig.resetField'),
+              () => window.confirm(t('pages.fieldConfig.confirmResetField')) && deleteMutation.mutate(c.id as number),
+              { hidden: c.id === null },
+            ),
+          ]}
+        />
       ),
     },
   ];
 
   return (
     <div>
-      <PageHeader title={t('pages.fieldConfig.title')} description={t('pages.fieldConfig.description')} />
-
       <Card style={{ marginBottom: 24 }}>
         <SelectField
           label={t('pages.fieldConfig.entityFilter')}

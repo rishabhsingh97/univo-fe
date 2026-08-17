@@ -6,17 +6,15 @@ import type {
   RequestStatusUpdateRequest,
 } from '../../types/finance';
 
+const BASE = '/api/v1/finance/reimbursements';
+
 export const reimbursementApi = {
   list: (page = 0, size = 20, sort?: string) =>
-    apiClient
-      .get<PageResponse<ReimbursementResponse>>('/api/finance/reimbursements', { params: { page, size, sort } })
-      .then((res) => res.data),
+    apiClient.get<PageResponse<ReimbursementResponse>>(BASE, { params: { page, size, sort } }).then((res) => res.data),
 
   create: (request: ReimbursementRequest) =>
-    apiClient.post<ReimbursementResponse>('/api/finance/reimbursements', request).then((res) => res.data),
+    apiClient.post<ReimbursementResponse>(BASE, request).then((res) => res.data),
 
   updateStatus: (id: number, request: RequestStatusUpdateRequest) =>
-    apiClient
-      .put<ReimbursementResponse>(`/api/finance/reimbursements/${id}/status`, request)
-      .then((res) => res.data),
+    apiClient.put<ReimbursementResponse>(`${BASE}/${id}/status`, request).then((res) => res.data),
 };

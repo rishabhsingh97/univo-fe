@@ -41,20 +41,6 @@ export function GradesPage() {
     { key: 'level', header: t('fields.level'), render: (g) => g.level, sortKey: 'level' },
     { key: 'name', header: t('fields.grade'), render: (g) => g.name, sortKey: 'name' },
     { key: 'code', header: t('fields.code'), render: (g) => g.code, sortKey: 'code' },
-    {
-      key: 'actions',
-      header: t('common.actions'),
-      render: (g) => (
-        <div className="row-actions">
-          {canWrite && <Button variant="secondary" onClick={() => setEditing(g)}>{t('common.edit')}</Button>}
-          {canDelete && (
-            <Button variant="danger" onClick={() => window.confirm(t('common.confirmDelete')) && deleteMutation.mutate(g.id)}>
-              {t('common.delete')}
-            </Button>
-          )}
-        </div>
-      ),
-    },
   ];
 
   return (
@@ -82,7 +68,14 @@ export function GradesPage() {
         </Modal>
       )}
 
-      <PagedDataTable columns={columns} queryKey={['grades']} fetchPage={gradeApi.list} getRowKey={(g) => g.id} />
+      <PagedDataTable
+        columns={columns}
+        queryKey={['grades']}
+        fetchPage={gradeApi.list}
+        getRowKey={(g) => g.id}
+        onEdit={canWrite ? (g) => setEditing(g) : undefined}
+        onDelete={canDelete ? (g) => deleteMutation.mutate(g.id) : undefined}
+      />
 
       {editing && (
         <Modal title={t('pages.grades.editTitle')} onClose={() => setEditing(null)}>

@@ -2,7 +2,7 @@ import { apiClient } from '../client';
 import type { PageResponse } from '../../types/common';
 import type { TaxConfigRequest, TaxConfigResponse } from '../../types/finance';
 
-const BASE = '/api/finance/tax-config';
+const BASE = '/api/v1/finance/tax-config';
 
 export const taxConfigApi = {
   list: (page = 0, size = 20, sort?: string) =>

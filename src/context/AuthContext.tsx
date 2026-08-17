@@ -12,6 +12,7 @@ interface Session {
   permissions: string[];
   timezone: string | null;
   disabledModules: string[];
+  mustChangePassword: boolean;
 }
 
 interface AuthContextValue {
@@ -21,6 +22,8 @@ interface AuthContextValue {
   updateTimezone: (timezone: string | null) => Promise<void>;
   hasPermission: (name: string) => boolean;
   hasAnyPermission: (names: string[]) => boolean;
+  /** Call after a successful self-service password change to clear the forced-change gate. */
+  markPasswordChanged: () => void;
 }
 
 const SESSION_STORAGE_KEY = 'erp.session';
@@ -62,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       permissions: response.permissions,
       timezone: response.timezone,
       disabledModules: response.disabledModules,
+      mustChangePassword: response.mustChangePassword,
     };
     persist(nextSession);
     setSession(nextSession);
@@ -88,8 +92,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hasPermission = (name: string) => session?.permissions?.includes(name) ?? false;
   const hasAnyPermission = (names: string[]) => names.some(hasPermission);
 
+  const markPasswordChanged = () => {
+    setSession((current) => {
+      if (!current) return current;
+      const next = { ...current, mustChangePassword: false };
+      persist(next);
+      return next;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ session, login, logout, updateTimezone, hasPermission, hasAnyPermission }}>
+    <AuthContext.Provider
+      value={{ session, login, logout, updateTimezone, hasPermission, hasAnyPermission, markPasswordChanged }}
+    >
       {children}
     </AuthContext.Provider>
   );

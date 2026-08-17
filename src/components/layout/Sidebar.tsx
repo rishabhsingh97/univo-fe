@@ -179,6 +179,7 @@ export function Sidebar() {
           <details key={group.label} className="nav-group" open={isActiveGroup || activeModule.groups.length === 1}>
             <summary>
               <IconChevronRight className="chevron" />
+              {group.icon && <group.icon className="group-icon" />}
               {group.label}
             </summary>
             <div className="nav-sublist">

@@ -40,20 +40,6 @@ export function LocationsPage() {
   const columns: DataTableColumn<LocationResponse>[] = [
     { key: 'name', header: t('fields.name'), render: (l) => l.name, sortKey: 'name' },
     { key: 'code', header: t('fields.code'), render: (l) => l.code, sortKey: 'code' },
-    {
-      key: 'actions',
-      header: t('common.actions'),
-      render: (l) => (
-        <div className="row-actions">
-          {canWrite && <Button variant="secondary" onClick={() => setEditing(l)}>{t('common.edit')}</Button>}
-          {canDelete && (
-            <Button variant="danger" onClick={() => window.confirm(t('common.confirmDelete')) && deleteMutation.mutate(l.id)}>
-              {t('common.delete')}
-            </Button>
-          )}
-        </div>
-      ),
-    },
   ];
 
   return (
@@ -79,7 +65,14 @@ export function LocationsPage() {
         </Modal>
       )}
 
-      <PagedDataTable columns={columns} queryKey={['locations']} fetchPage={locationApi.list} getRowKey={(l) => l.id} />
+      <PagedDataTable
+        columns={columns}
+        queryKey={['locations']}
+        fetchPage={locationApi.list}
+        getRowKey={(l) => l.id}
+        onEdit={canWrite ? (l) => setEditing(l) : undefined}
+        onDelete={canDelete ? (l) => deleteMutation.mutate(l.id) : undefined}
+      />
 
       {editing && (
         <Modal title={t('pages.locations.editTitle')} onClose={() => setEditing(null)}>

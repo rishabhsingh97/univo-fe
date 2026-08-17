@@ -64,3 +64,77 @@ export interface LeaveStatusUpdateRequest {
 export interface LeavePendingCount {
   count: number;
 }
+
+export interface ShiftRequest {
+  name: string;
+  code: string;
+  startTime: string;
+  endTime: string;
+  graceMinutes?: number;
+}
+
+export interface ShiftResponse {
+  id: number;
+  name: string;
+  code: string;
+  startTime: string;
+  endTime: string;
+  graceMinutes: number;
+}
+
+export interface ShiftAssignmentRequest {
+  employeeId: number;
+  shiftId: number;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+}
+
+export interface ShiftAssignmentResponse {
+  id: number;
+  employeeId: number;
+  employeeName: string;
+  shiftId: number;
+  shiftName: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+}
+
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface ApprovalStatusUpdateRequest {
+  status: ApprovalStatus;
+}
+
+export interface AttendanceRegularizationRequest {
+  employeeId: number;
+  attendanceDate: string;
+  requestedStatus: AttendanceStatus;
+  reason?: string;
+}
+
+export interface AttendanceRegularizationResponse {
+  id: number;
+  employeeId: number;
+  employeeName: string;
+  attendanceDate: string;
+  requestedStatus: AttendanceStatus;
+  reason: string | null;
+  status: ApprovalStatus;
+}
+
+export interface OvertimeRequest {
+  employeeId: number;
+  workDate: string;
+  hours: number;
+  reason?: string;
+}
+
+export interface OvertimeResponse {
+  id: number;
+  employeeId: number;
+  employeeName: string;
+  workDate: string;
+  hours: number;
+  reason: string | null;
+  status: ApprovalStatus;
+}

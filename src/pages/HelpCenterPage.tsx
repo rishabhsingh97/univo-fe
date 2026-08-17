@@ -31,16 +31,27 @@ const ARTICLES: Article[] = [
   },
   {
     title: 'Attendance & leave',
-    description: 'Mark daily attendance, apply for and approve leave, and maintain the holiday calendar under Time & Leave.',
+    description:
+      "Mark daily attendance, apply for and approve leave, and maintain the holiday calendar under Time & Leave. Shifts and the shift roster assign employees to timings; Attendance Regularization handles correcting a past day's status; Overtime logs extra hours for payroll.",
+  },
+  {
+    title: 'Recruitment',
+    description:
+      'The full hiring pipeline lives under Recruitment: open a Job Requisition, publish it as a Job, log Candidates against it, schedule Interviews, and extend Offers. There is no automatic hand-off from an accepted offer to a new Employee record yet - that step is still manual.',
   },
   {
     title: 'Payroll',
     description:
-      'Create and process monthly payroll runs and view generated payslips from Payroll; maintain each employee\'s basic/HRA/allowances from Salary Structures. Payroll is part of the HR module, not a separate one.',
+      "Create and process monthly payroll runs and view generated payslips from Payroll. Pay is component-based - define Earning/Deduction Salary Components (flat or percentage-of-basic), then assemble each employee's Salary Structure from them. Payroll is part of the HR module, not a separate one.",
   },
   {
     title: 'Finance',
     description: 'Track employee loans and advances, reimbursements, and per-financial-year tax configuration.',
+  },
+  {
+    title: 'Career, Exit & Retirement (preview)',
+    description:
+      'Performance, Career Actions, Exit, Full & Final, and Retirement are built as working UI over mock, in-session data - there is no backend behind them yet, so nothing entered there is saved beyond this browser session. They will switch to real, persisted data once their backends are built.',
   },
   {
     title: 'Access management',
@@ -63,6 +74,13 @@ interface ReleaseNoteGroup {
 }
 
 const RELEASE_NOTES: ReleaseNoteGroup[] = [
+  {
+    date: '17 August 2026',
+    notes: [
+      'Added Performance, Career Actions, Exit, Full & Final, and Retirement as new pages under Human Resources - these run on mock, in-session data pending their real backends, so nothing entered there persists yet.',
+      'Wired up the Tax Configuration page under Finance, which previously had no working link in the sidebar.',
+    ],
+  },
   {
     date: '16 August 2026',
     notes: [
@@ -88,36 +106,24 @@ const RELEASE_NOTES: ReleaseNoteGroup[] = [
 
 const ROADMAP: Article[] = [
   {
-    title: 'Employee login credentials',
-    description: "Employee records aren't yet linked to a login account - no way to generate a user for an employee straight from their record.",
-  },
-  {
-    title: 'Employee details page',
-    description: "There's no single page to view one employee's full record (profile, documents, history) - documents are managed from a separate page today.",
-  },
-  {
-    title: 'Employee 360 profile',
-    description: 'A unified profile combining the above (documents, employment history timeline) into one employee record view.',
-  },
-  {
     title: 'Statutory payroll',
-    description: "PF, ESI, professional tax, TDS slabs, and gratuity as part of the HR payroll flow, beyond today's flat salary structure.",
+    description: "PF, ESI, professional tax, and TDS slabs as part of the HR payroll flow. Tax Configuration exists under Finance, but nothing computes a real PF/ESI/PT contribution from it yet.",
   },
   {
-    title: 'Structured leave & attendance',
-    description: 'Configurable leave policies with accrual balances, shift management, and attendance regularization requests.',
+    title: 'Onboarding checklist',
+    description: 'Employee Documents and PAN/UAN capture exist, but there is no guided onboarding task checklist (asset issuance, policy acknowledgment, and so on) yet.',
   },
   {
-    title: 'Recruitment & onboarding',
-    description: 'Requisitions, candidate pipelines, offers, and a guided onboarding checklist - part of Human Resources.',
+    title: 'Offer-to-employee hand-off',
+    description: 'Accepting an Offer in Recruitment does not yet create the corresponding Employee record automatically - HR still creates it by hand today.',
   },
   {
-    title: 'Performance reviews',
-    description: 'Goal setting and review cycles for employees and managers - part of Human Resources.',
+    title: 'Real backends for Performance, Career, Exit, Full & Final, and Retirement',
+    description: 'These pages are live and usable today, but run entirely on mock, in-session data - nothing entered there is saved once you leave. Persisting them to real data needs backend work.',
   },
   {
     title: 'Employee & manager self-service',
-    description: 'Dedicated ESS/MSS views so employees and managers can act without full admin access.',
+    description: "Today's self-service is thin: My Details is read-only, and managers approve requests inline on the Leave/Overtime/Regularization pages themselves. A dedicated ESS portal (own payslips, attendance history, leave balance in one place) and a manager-scoped \"my team\" view don't exist yet.",
   },
   {
     title: 'Custom fields engine',

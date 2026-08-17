@@ -4,7 +4,7 @@ import { brandingApi } from '../api/public/brandingApi';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
-import { Button, Card, PageHeader, TextField } from '../components/ui';
+import { Button, Card, TextField } from '../components/ui';
 import type { TenantBrandingResponse, TenantBrandingRequest } from '../types/branding';
 
 function toForm(branding: TenantBrandingResponse | null): TenantBrandingRequest {
@@ -22,6 +22,8 @@ function formatThemeVars(themeVars: Record<string, string> | null | undefined): 
   return themeVars && Object.keys(themeVars).length > 0 ? JSON.stringify(themeVars, null, 2) : '';
 }
 
+/** No title of its own - only rendered as a tab inside AdministrationPage, whose tab label
+ * already says "Branding". */
 export function BrandingPage() {
   const { t } = useLocale();
   const { session } = useAuth();
@@ -77,7 +79,6 @@ export function BrandingPage() {
 
   return (
     <div>
-      <PageHeader title={t('pages.branding.title')} description={t('pages.branding.description')} />
       <Card>
         <form onSubmit={handleSubmit} className="form-grid">
           <TextField

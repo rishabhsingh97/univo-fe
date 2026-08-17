@@ -1,6 +1,11 @@
 import { apiClient } from '../client';
 import type { PageResponse } from '../../types/common';
-import type { EmployeeRequest, EmployeeResponse, ReassignManagerRequest } from '../../types/hr';
+import type {
+  EmployeeRequest,
+  EmployeeResponse,
+  GenerateCredentialsResponse,
+  ReassignManagerRequest,
+} from '../../types/hr';
 
 const BASE = '/api/v1/hr/employees';
 
@@ -22,6 +27,15 @@ export const employeeApi = {
       .get<PageResponse<EmployeeResponse>>(`${BASE}/${id}/direct-reports`, { params: { page, size } })
       .then((res) => res.data),
 
+  roots: (page = 0, size = 50) =>
+    apiClient.get<PageResponse<EmployeeResponse>>(`${BASE}/roots`, { params: { page, size } }).then((res) => res.data),
+
   reassignManager: (id: number, request: ReassignManagerRequest) =>
     apiClient.put<EmployeeResponse>(`${BASE}/${id}/manager`, request).then((res) => res.data),
+
+  generateCredentials: (id: number) =>
+    apiClient.post<GenerateCredentialsResponse>(`${BASE}/${id}/generate-credentials`).then((res) => res.data),
+
+  resetPassword: (id: number) =>
+    apiClient.post<GenerateCredentialsResponse>(`${BASE}/${id}/reset-password`).then((res) => res.data),
 };

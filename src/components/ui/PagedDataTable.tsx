@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { DataTable, type DataTableColumn } from './DataTable';
+import type { ActionMenuItem } from './ActionMenu';
 import { usePagedTable } from '../../hooks/usePagedTable';
 import type { PageResponse } from '../../types/common';
 
@@ -15,6 +16,11 @@ export interface PagedDataTableProps<T> {
   isLoading?: boolean;
   emptyMessage?: string;
   maxHeight?: string;
+  /** See DataTable - passing any of these appends a row-actions column automatically. */
+  onView?: (row: T) => void;
+  onEdit?: (row: T) => void;
+  onDelete?: (row: T) => void;
+  extraActions?: (row: T) => ActionMenuItem[];
 }
 
 /**
@@ -31,6 +37,10 @@ export function PagedDataTable<T>({
   pageSize = 10,
   emptyMessage,
   maxHeight,
+  onView,
+  onEdit,
+  onDelete,
+  extraActions,
 }: PagedDataTableProps<T>) {
   const table = usePagedTable(pageSize);
 
@@ -48,6 +58,10 @@ export function PagedDataTable<T>({
       emptyMessage={emptyMessage}
       maxHeight={maxHeight}
       pagination={table.paginationFor(data)}
+      onView={onView}
+      onEdit={onEdit}
+      onDelete={onDelete}
+      extraActions={extraActions}
     />
   );
 }

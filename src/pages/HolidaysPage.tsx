@@ -66,20 +66,6 @@ export function HolidaysPage() {
     { key: 'name', header: t('fields.name'), render: (h) => h.name, sortKey: 'name' },
     { key: 'date', header: t('fields.date'), render: (h) => formatDate(h.holidayDate), sortKey: 'holidayDate' },
     { key: 'recurring', header: t('fields.recurringYearly'), render: (h) => (h.recurringYearly ? 'Yes' : 'No'), sortKey: 'recurringYearly' },
-    {
-      key: 'actions',
-      header: t('common.actions'),
-      render: (h) => (
-        <div className="row-actions">
-          {canWrite && <Button variant="secondary" onClick={() => setEditing(h)}>{t('common.edit')}</Button>}
-          {canDelete && (
-            <Button variant="danger" onClick={() => window.confirm(t('common.confirmDelete')) && deleteMutation.mutate(h.id)}>
-              {t('common.delete')}
-            </Button>
-          )}
-        </div>
-      ),
-    },
   ];
 
   return (
@@ -109,7 +95,14 @@ export function HolidaysPage() {
         </Modal>
       )}
 
-      <PagedDataTable columns={columns} queryKey={['holidays']} fetchPage={holidayApi.list} getRowKey={(h) => h.id} />
+      <PagedDataTable
+        columns={columns}
+        queryKey={['holidays']}
+        fetchPage={holidayApi.list}
+        getRowKey={(h) => h.id}
+        onEdit={canWrite ? (h) => setEditing(h) : undefined}
+        onDelete={canDelete ? (h) => deleteMutation.mutate(h.id) : undefined}
+      />
 
       {editing && (
         <Modal title={t('pages.holidays.editTitle')} onClose={() => setEditing(null)}>

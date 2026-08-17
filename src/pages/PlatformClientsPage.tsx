@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { platformTenantApi } from '../api/platform/platformTenantApi';
 import { Badge, Button, Card, Modal, PageHeader, PagedDataTable, PillList, TextField, statusTone } from '../components/ui';
-import type { DataTableColumn } from '../components/ui';
+import type { ActionMenuItem, DataTableColumn } from '../components/ui';
 import type { CreateTenantRequest, TenantSummaryResponse } from '../types/platform';
 
 function emptyForm(): CreateTenantRequest {
@@ -62,21 +62,15 @@ export function PlatformClientsPage() {
       header: 'Disabled modules',
       render: (t) => (t.disabledModules.length > 0 ? <PillList items={t.disabledModules} tone="warning" /> : <span style={{ color: 'var(--color-text-muted)' }}>None</span>),
     },
+  ];
+
+  const extraActions = (tenant: TenantSummaryResponse): ActionMenuItem[] => [
+    { label: 'Modules', onClick: () => setManagingModules(tenant) },
     {
-      key: 'actions',
-      header: 'Actions',
-      render: (t) => (
-        <div className="row-actions">
-          <Button variant="secondary" onClick={() => setManagingModules(t)}>Modules</Button>
-          <Button
-            variant={t.status === 'ACTIVE' ? 'danger' : 'primary'}
-            disabled={statusMutation.isPending}
-            onClick={() => statusMutation.mutate({ id: t.id, status: t.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}
-          >
-            {t.status === 'ACTIVE' ? 'Disable' : 'Enable'}
-          </Button>
-        </div>
-      ),
+      label: tenant.status === 'ACTIVE' ? 'Disable' : 'Enable',
+      tone: tenant.status === 'ACTIVE' ? 'danger' : 'default',
+      disabled: statusMutation.isPending,
+      onClick: () => statusMutation.mutate({ id: tenant.id, status: tenant.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' }),
     },
   ];
 
@@ -88,7 +82,13 @@ export function PlatformClientsPage() {
         actions={<Button onClick={() => setShowCreate(true)}>+ Add client</Button>}
       />
 
-      <PagedDataTable columns={columns} queryKey={['platform', 'tenants']} fetchPage={platformTenantApi.list} getRowKey={(t) => t.id} />
+      <PagedDataTable
+        columns={columns}
+        queryKey={['platform', 'tenants']}
+        fetchPage={platformTenantApi.list}
+        getRowKey={(t) => t.id}
+        extraActions={extraActions}
+      />
 
       {showCreate && (
         <Modal title="New client" onClose={() => setShowCreate(false)}>

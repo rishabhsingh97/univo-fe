@@ -74,20 +74,6 @@ export function AttendancePage() {
       sortKey: 'status',
     },
     { key: 'remarks', header: t('fields.remarks'), render: (r) => r.remarks ?? '-' },
-    {
-      key: 'actions',
-      header: t('common.actions'),
-      render: (r) => (
-        <div className="row-actions">
-          {canWrite && <Button variant="secondary" onClick={() => setEditing(r)}>{t('common.edit')}</Button>}
-          {canDelete && (
-            <Button variant="danger" onClick={() => window.confirm(t('common.confirmDelete')) && deleteMutation.mutate(r.id)}>
-              {t('common.delete')}
-            </Button>
-          )}
-        </div>
-      ),
-    },
   ];
 
   return (
@@ -117,7 +103,14 @@ export function AttendancePage() {
         </Modal>
       )}
 
-      <PagedDataTable columns={columns} queryKey={['attendance']} fetchPage={attendanceApi.list} getRowKey={(r) => r.id} />
+      <PagedDataTable
+        columns={columns}
+        queryKey={['attendance']}
+        fetchPage={attendanceApi.list}
+        getRowKey={(r) => r.id}
+        onEdit={canWrite ? (r) => setEditing(r) : undefined}
+        onDelete={canDelete ? (r) => deleteMutation.mutate(r.id) : undefined}
+      />
 
       {editing && (
         <Modal title={t('pages.attendance.editTitle')} onClose={() => setEditing(null)}>

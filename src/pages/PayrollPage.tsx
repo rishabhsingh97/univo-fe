@@ -5,7 +5,7 @@ import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
 import { useTimezone } from '../hooks/useTimezone';
 import { Badge, Button, Modal, PageHeader, PagedDataTable, TextField, statusTone } from '../components/ui';
-import type { DataTableColumn } from '../components/ui';
+import type { ActionMenuItem, DataTableColumn } from '../components/ui';
 import type { PayrollRunRequest, PayrollRunResponse, PayslipResponse } from '../types/payroll';
 
 function emptyForm(): PayrollRunRequest {
@@ -41,26 +41,28 @@ export function PayrollPage() {
     { key: 'period', header: 'Period', render: (r) => `${r.periodMonth}/${r.periodYear}`, sortKey: 'periodYear' },
     { key: 'status', header: 'Status', render: (r) => <Badge tone={statusTone(r.status)}>{r.status}</Badge>, sortKey: 'status' },
     { key: 'runDate', header: 'Run date', render: (r) => (r.runDate ? format(r.runDate) : '-'), sortKey: 'runDate' },
-    {
-      key: 'actions',
-      header: t('common.actions'),
-      render: (r) => (
-        <div className="row-actions">
-          {canWrite && r.status === 'DRAFT' && (
-            <Button variant="secondary" disabled={processMutation.isPending} onClick={() => processMutation.mutate(r.id)}>
-              {t('pages.payroll.process')}
-            </Button>
-          )}
-          <Button variant="secondary" onClick={() => setViewingPayslipsFor(r)}>
-            {t('pages.payroll.viewPayslips')}
-          </Button>
-        </div>
-      ),
-    },
   ];
+
+  const extraActions = (r: PayrollRunResponse): ActionMenuItem[] => {
+    const items: ActionMenuItem[] = [];
+    if (canWrite && r.status === 'DRAFT') {
+      items.push({
+        label: t('pages.payroll.process'),
+        disabled: processMutation.isPending,
+        onClick: () => processMutation.mutate(r.id),
+      });
+    }
+    items.push({ label: t('pages.payroll.viewPayslips'), onClick: () => setViewingPayslipsFor(r) });
+    return items;
+  };
 
   const payslipColumns: DataTableColumn<PayslipResponse>[] = [
     { key: 'employee', header: t('common.selectEmployee'), render: (p) => p.employeeName },
+    {
+      key: 'components',
+      header: t('pages.salaryComponents.title'),
+      render: (p) => p.components.map((c) => `${c.componentName}: ${c.componentType === 'DEDUCTION' ? '-' : ''}${c.amount}`).join(', ') || '-',
+    },
     { key: 'grossPay', header: t('fields.amount'), render: (p) => p.grossPay },
     { key: 'deductions', header: t('pages.payroll.deductions'), render: (p) => p.deductions },
     { key: 'netPay', header: t('pages.payroll.netPay'), render: (p) => p.netPay },
@@ -91,7 +93,13 @@ export function PayrollPage() {
         </Modal>
       )}
 
-      <PagedDataTable columns={columns} queryKey={['payroll-runs']} fetchPage={payrollRunApi.list} getRowKey={(r) => r.id} />
+      <PagedDataTable
+        columns={columns}
+        queryKey={['payroll-runs']}
+        fetchPage={payrollRunApi.list}
+        getRowKey={(r) => r.id}
+        extraActions={extraActions}
+      />
 
       {viewingPayslipsFor && (
         <Modal

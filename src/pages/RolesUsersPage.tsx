@@ -4,7 +4,7 @@ import { roleApi } from '../api/admin/roleApi';
 import { userApi } from '../api/admin/userApi';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
-import { Badge, Button, Modal, PageHeader, PagedDataTable, PillList, TextField, statusTone } from '../components/ui';
+import { Badge, Button, Modal, PagedDataTable, PillList, TextField, statusTone } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
 import type { RoleRequest, RoleResponse, UserResponse } from '../types/auth';
 
@@ -16,27 +16,22 @@ function toggleId(ids: number[], id: number): number[] {
   return ids.includes(id) ? ids.filter((existing) => existing !== id) : [...ids, id];
 }
 
-export function AccessManagementPage() {
+/** No title of its own - only rendered as a tab inside AdministrationPage, whose tab label
+ * already says "Roles". Roles and Users used to be one page with an internal toggle; they're
+ * independent enough (neither needs the other's data) to be two flat tabs instead. */
+export function RolesManagementPage() {
   const { t } = useLocale();
   const { hasPermission } = useAuth();
   const queryClient = useQueryClient();
 
-  const [tab, setTab] = useState<'roles' | 'users'>('roles');
   const [form, setForm] = useState<RoleRequest>(emptyRoleForm());
   const [showCreateRole, setShowCreateRole] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleResponse | null>(null);
-  const [assigningUser, setAssigningUser] = useState<UserResponse | null>(null);
-  const [assignRoleIds, setAssignRoleIds] = useState<number[]>([]);
+  const [viewingPermissionsFor, setViewingPermissionsFor] = useState<RoleResponse | null>(null);
 
   const canManageRoles = hasPermission('admin.role.manage');
-  const canManageUsers = hasPermission('admin.user.manage');
 
-  // Full (unpaginated-ish) lists - the "assign roles to user" and role-permission checkbox
-  // modals need every option, not just the visible page of the Roles table below.
-  const allRolesQuery = useQuery({ queryKey: ['roles', 'select'], queryFn: () => roleApi.list(0, 200) });
   const permissionsQuery = useQuery({ queryKey: ['permissions'], queryFn: () => roleApi.listPermissions(0, 200) });
-
-  const roles = allRolesQuery.data?.content ?? [];
   const permissions = permissionsQuery.data?.content ?? [];
 
   const invalidateRoles = () => queryClient.invalidateQueries({ queryKey: ['roles'] });
@@ -63,14 +58,6 @@ export function AccessManagementPage() {
     onSuccess: invalidateRoles,
   });
 
-  const assignRolesMutation = useMutation({
-    mutationFn: ({ id, roleIds }: { id: number; roleIds: number[] }) => userApi.assignRoles(id, { roleIds }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      setAssigningUser(null);
-    },
-  });
-
   const handleCreateRole = (event: FormEvent) => {
     event.preventDefault();
     createRoleMutation.mutate(form);
@@ -90,80 +77,36 @@ export function AccessManagementPage() {
     });
   };
 
-  const openAssign = (user: UserResponse) => {
-    setAssigningUser(user);
-    setAssignRoleIds(user.roles.map((r) => r.id));
-  };
-
-  const handleAssignRoles = (event: FormEvent) => {
-    event.preventDefault();
-    if (!assigningUser) return;
-    assignRolesMutation.mutate({ id: assigningUser.id, roleIds: assignRoleIds });
-  };
-
   const roleColumns: DataTableColumn<RoleResponse>[] = [
     { key: 'label', header: t('fields.label'), render: (r) => r.label, sortKey: 'label' },
     { key: 'description', header: t('fields.description'), render: (r) => r.description ?? '-' },
-    { key: 'permissions', header: t('fields.permissions'), render: (r) => <PillList items={r.permissions.map((p) => p.name)} /> },
-  ];
-  if (canManageRoles) {
-    roleColumns.push({
-      key: 'actions',
-      header: t('common.actions'),
-      render: (r) => (
-        <div className="row-actions">
-          <Button variant="secondary" onClick={() => setEditingRole(r)}>{t('common.edit')}</Button>
-          <Button variant="danger" onClick={() => window.confirm(t('common.confirmDelete')) && deleteRoleMutation.mutate(r.id)}>
-            {t('common.delete')}
-          </Button>
-        </div>
-      ),
-    });
-  }
-
-  const userColumns: DataTableColumn<UserResponse>[] = [
-    { key: 'username', header: t('login.username'), render: (u) => u.username, sortKey: 'username' },
-    { key: 'email', header: t('fields.email'), render: (u) => u.email, sortKey: 'email' },
-    { key: 'roles', header: t('pages.accessManagement.rolesTab'), render: (u) => <PillList items={u.roles.map((r) => r.label)} /> },
     {
-      key: 'status',
-      header: t('fields.status'),
-      render: (u) => <Badge tone={statusTone(u.status)}>{u.status}</Badge>,
-      sortKey: 'status',
+      key: 'permissions',
+      header: t('fields.permissions'),
+      render: (r) => (
+        <Button variant="secondary" onClick={() => setViewingPermissionsFor(r)}>
+          {t('pages.accessManagement.viewPermissions').replace('{count}', String(r.permissions.length))}
+        </Button>
+      ),
     },
   ];
-  if (canManageUsers) {
-    userColumns.push({
-      key: 'actions',
-      header: t('common.actions'),
-      render: (u) => <Button variant="secondary" onClick={() => openAssign(u)}>{t('common.edit')}</Button>,
-    });
-  }
 
   return (
     <div>
-      <PageHeader
-        title={t('pages.accessManagement.title')}
-        description={t('pages.accessManagement.description')}
-        actions={
-          tab === 'roles' && canManageRoles ? (
-            <Button onClick={() => setShowCreateRole(true)}>{t('pages.accessManagement.addRole')}</Button>
-          ) : undefined
-        }
-      />
-
-      <div className="row-actions" style={{ marginBottom: 16 }}>
-        <Button variant={tab === 'roles' ? 'primary' : 'secondary'} onClick={() => setTab('roles')}>
-          {t('pages.accessManagement.rolesTab')}
-        </Button>
-        <Button variant={tab === 'users' ? 'primary' : 'secondary'} onClick={() => setTab('users')}>
-          {t('pages.accessManagement.usersTab')}
-        </Button>
-      </div>
-
-      {tab === 'roles' && (
-        <PagedDataTable columns={roleColumns} queryKey={['roles']} fetchPage={roleApi.list} getRowKey={(r) => r.id} />
+      {canManageRoles && (
+        <div className="row-actions" style={{ justifyContent: 'flex-end', marginBottom: 16 }}>
+          <Button onClick={() => setShowCreateRole(true)}>{t('pages.accessManagement.addRole')}</Button>
+        </div>
       )}
+
+      <PagedDataTable
+        columns={roleColumns}
+        queryKey={['roles']}
+        fetchPage={roleApi.list}
+        getRowKey={(r) => r.id}
+        onEdit={canManageRoles ? (r) => setEditingRole(r) : undefined}
+        onDelete={canManageRoles ? (r) => deleteRoleMutation.mutate(r.id) : undefined}
+      />
 
       {showCreateRole && (
         <Modal title={t('pages.accessManagement.createRole')} onClose={() => setShowCreateRole(false)}>
@@ -194,10 +137,6 @@ export function AccessManagementPage() {
             </div>
           </form>
         </Modal>
-      )}
-
-      {tab === 'users' && (
-        <PagedDataTable columns={userColumns} queryKey={['users']} fetchPage={userApi.list} getRowKey={(u) => u.id} />
       )}
 
       {editingRole && (
@@ -244,6 +183,82 @@ export function AccessManagementPage() {
           </form>
         </Modal>
       )}
+
+      {viewingPermissionsFor && (
+        <Modal
+          title={`${t('fields.permissions')} – ${viewingPermissionsFor.label}`}
+          onClose={() => setViewingPermissionsFor(null)}
+        >
+          {viewingPermissionsFor.permissions.length > 0 ? (
+            <PillList items={viewingPermissionsFor.permissions.map((p) => p.name)} />
+          ) : (
+            <p>{t('pages.accessManagement.noPermissions')}</p>
+          )}
+          <div className="form-actions" style={{ marginTop: 16 }}>
+            <Button type="button" onClick={() => setViewingPermissionsFor(null)}>{t('common.close')}</Button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/** No title of its own - only rendered as a tab inside AdministrationPage, whose tab label
+ * already says "Users". See RolesManagementPage above for why this split from one page. */
+export function UsersManagementPage() {
+  const { t } = useLocale();
+  const { hasPermission } = useAuth();
+  const queryClient = useQueryClient();
+
+  const [assigningUser, setAssigningUser] = useState<UserResponse | null>(null);
+  const [assignRoleIds, setAssignRoleIds] = useState<number[]>([]);
+
+  const canManageUsers = hasPermission('admin.user.manage');
+
+  // Every role, not just one page of it - the "assign roles to user" modal needs every option.
+  const allRolesQuery = useQuery({ queryKey: ['roles', 'select'], queryFn: () => roleApi.list(0, 200) });
+  const roles = allRolesQuery.data?.content ?? [];
+
+  const assignRolesMutation = useMutation({
+    mutationFn: ({ id, roleIds }: { id: number; roleIds: number[] }) => userApi.assignRoles(id, { roleIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setAssigningUser(null);
+    },
+  });
+
+  const openAssign = (user: UserResponse) => {
+    setAssigningUser(user);
+    setAssignRoleIds(user.roles.map((r) => r.id));
+  };
+
+  const handleAssignRoles = (event: FormEvent) => {
+    event.preventDefault();
+    if (!assigningUser) return;
+    assignRolesMutation.mutate({ id: assigningUser.id, roleIds: assignRoleIds });
+  };
+
+  const userColumns: DataTableColumn<UserResponse>[] = [
+    { key: 'username', header: t('login.username'), render: (u) => u.username, sortKey: 'username' },
+    { key: 'email', header: t('fields.email'), render: (u) => u.email, sortKey: 'email' },
+    { key: 'roles', header: t('nav.roles'), render: (u) => <PillList items={u.roles.map((r) => r.label)} /> },
+    {
+      key: 'status',
+      header: t('fields.status'),
+      render: (u) => <Badge tone={statusTone(u.status)}>{u.status}</Badge>,
+      sortKey: 'status',
+    },
+  ];
+
+  return (
+    <div>
+      <PagedDataTable
+        columns={userColumns}
+        queryKey={['users']}
+        fetchPage={userApi.list}
+        getRowKey={(u) => u.id}
+        onEdit={canManageUsers ? (u) => openAssign(u) : undefined}
+      />
 
       {assigningUser && (
         <Modal title={`${t('pages.accessManagement.editRolesFor')} ${assigningUser.username}`} onClose={() => setAssigningUser(null)}>

@@ -42,9 +42,10 @@
   --color-border: color-mix(in srgb, var(--color-primary) 30%, white);
 
   /* The table header (see .table th in ui.css) is a dark SHADE of the same brand blue - close
-     enough to --color-primary itself (not diluted with much black) that it reads as "the same
-     blue as the Add button, just deeper" at a glance, not as an unrelated dark navy. */
-  --table-header-bg: color-mix(in srgb, var(--color-primary-hover) 78%, black);
+     enough to --color-primary itself that it reads as "the same blue as the Add button, just
+     deeper" rather than an unrelated dark navy, but dark enough that its light uppercase text
+     stays comfortably high-contrast (a lighter attempt at this traded away too much of that). */
+  --table-header-bg: color-mix(in srgb, var(--color-primary-hover) 60%, black);
   --table-header-text: color-mix(in srgb, var(--color-primary) 22%, white);
   --table-header-hover-text: #ffffff;
 

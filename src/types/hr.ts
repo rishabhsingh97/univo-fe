@@ -97,6 +97,20 @@ export interface EmployeeRequest {
   emergencyContactPhone?: string;
   bankAccountNumber?: string;
   bankIfsc?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+}
+
+export interface EmployeeLinkRequest {
+  label: string;
+  url: string;
+}
+
+export interface EmployeeLinkResponse {
+  id: number;
+  label: string;
+  url: string;
+  displayOrder: number;
 }
 
 export interface EmployeeResponse {
@@ -118,7 +132,6 @@ export interface EmployeeResponse {
   managerName: string | null;
   managerEmail: string | null;
   hasUserAccount: boolean;
-  username: string | null;
   employmentType: EmploymentType;
   dateOfJoining: string;
   confirmationDate: string | null;
@@ -131,6 +144,9 @@ export interface EmployeeResponse {
   emergencyContactPhone: string | null;
   bankAccountNumber: string | null;
   bankIfsc: string | null;
+  linkedinUrl: string | null;
+  githubUrl: string | null;
+  links: EmployeeLinkResponse[];
   createdAt: string;
   updatedAt: string;
 }
@@ -140,6 +156,10 @@ export interface ReassignManagerRequest {
 }
 
 export interface GenerateCredentialsResponse {
-  username: string;
+  email: string;
   temporaryPassword: string;
+}
+
+export interface EmployeeFilterOptionsResponse {
+  statuses: string[];
 }

@@ -5,9 +5,13 @@ import { PlatformLayout } from '../components/layout/PlatformLayout';
 import { ProtectedRoute } from './ProtectedRoute';
 import { PlatformProtectedRoute } from './PlatformProtectedRoute';
 import { LoginPage } from '../pages/LoginPage';
+import { SignupStep1Page } from '../pages/signup/SignupStep1Page';
+import { SignupStep2Page } from '../pages/signup/SignupStep2Page';
+import { SignupStep3Page } from '../pages/signup/SignupStep3Page';
 import { PlatformLoginPage } from '../pages/PlatformLoginPage';
 import { PlatformClientsPage } from '../pages/PlatformClientsPage';
 import { PlatformModulesPage } from '../pages/PlatformModulesPage';
+import { PlatformStatusPage } from '../pages/PlatformStatusPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { EmployeesPage } from '../pages/EmployeesPage';
 import { OrgUnitsPage } from '../pages/OrgUnitsPage';
@@ -31,6 +35,7 @@ import { SalaryStructuresPage } from '../pages/SalaryStructuresPage';
 import { SalaryComponentsPage } from '../pages/SalaryComponentsPage';
 import { FinancePage } from '../pages/FinancePage';
 import { TaxConfigPage } from '../pages/TaxConfigPage';
+import { StatutoryConfigPage } from '../pages/StatutoryConfigPage';
 import { PerformancePage } from '../pages/PerformancePage';
 import { CareerPage } from '../pages/CareerPage';
 import { ExitPage } from '../pages/ExitPage';
@@ -47,12 +52,16 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupStep1Page />} />
+      <Route path="/signup/:draftId/company" element={<SignupStep2Page />} />
+      <Route path="/signup/:draftId/modules" element={<SignupStep3Page />} />
       <Route path="/platform/login" element={<PlatformLoginPage />} />
       <Route element={<PlatformProtectedRoute />}>
         <Route element={<PlatformLayout />}>
           <Route path="/platform" element={<Navigate to="/platform/clients" replace />} />
           <Route path="/platform/clients" element={<PlatformClientsPage />} />
           <Route path="/platform/modules" element={<PlatformModulesPage />} />
+          <Route path="/platform/status" element={<PlatformStatusPage />} />
         </Route>
       </Route>
       <Route element={<ProtectedRoute />}>
@@ -82,6 +91,7 @@ export function AppRoutes() {
           <Route path="/payroll/salary-components" element={<SalaryComponentsPage />} />
           <Route path="/finance" element={<FinancePage />} />
           <Route path="/finance/tax-config" element={<TaxConfigPage />} />
+          <Route path="/finance/statutory-config" element={<StatutoryConfigPage />} />
           <Route path="/performance" element={<PerformancePage />} />
           <Route path="/career" element={<CareerPage />} />
           <Route path="/exit" element={<ExitPage />} />

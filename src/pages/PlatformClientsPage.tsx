@@ -6,7 +6,7 @@ import type { ActionMenuItem, DataTableColumn } from '../components/ui';
 import type { CreateTenantRequest, TenantSummaryResponse } from '../types/platform';
 
 function emptyForm(): CreateTenantRequest {
-  return { tenantCode: '', name: '', adminUsername: '', adminEmail: '', adminPassword: '' };
+  return { tenantCode: '', name: '', adminEmail: '', adminPassword: '' };
 }
 
 export function PlatformClientsPage() {
@@ -97,7 +97,6 @@ export function PlatformClientsPage() {
               onChange={(e) => setForm({ ...form, tenantCode: e.target.value.toLowerCase() })}
               placeholder="e.g. acme" required />
             <TextField label="Company name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-            <TextField label="Admin username" value={form.adminUsername} onChange={(e) => setForm({ ...form, adminUsername: e.target.value })} required />
             <TextField label="Admin email" type="email" value={form.adminEmail} onChange={(e) => setForm({ ...form, adminEmail: e.target.value })} required />
             <TextField label="Admin password" type="password" value={form.adminPassword} onChange={(e) => setForm({ ...form, adminPassword: e.target.value })} required />
             {createMutation.isError && (

@@ -1,14 +1,18 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
+import { useTimezone } from '../../hooks/useTimezone';
+import { notificationApi } from '../../api/notification/notificationApi';
+import type { NotificationResponse } from '../../types/notification';
 import { buildSearchIndex, type NavLeaf } from './navConfig';
-import { IconSearch, IconBell, IconHelp, IconLogout, IconGeneral, IconPeople, IconLock } from './navIcons';
+import { IconSearch, IconBell, IconHelp, IconLogout, IconGeneral, IconPeople, IconLock, IconMenu } from './navIcons';
 import './layout.css';
 
 const MAX_RESULTS = 8;
 
-export function Topbar() {
+export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const { session, logout, hasAnyPermission } = useAuth();
   const { t } = useLocale();
   const navigate = useNavigate();
@@ -64,10 +68,13 @@ export function Topbar() {
     }
   };
 
-  const initials = (session?.username ?? '?').slice(0, 2).toUpperCase();
+  const initials = (session?.email ?? '?').slice(0, 2).toUpperCase();
 
   return (
     <header className="topbar">
+      <button type="button" className="icon-btn topbar-menu-btn" aria-label="Open menu" onClick={onOpenMobileNav}>
+        <IconMenu />
+      </button>
       <div className="topbar-search" ref={searchRef}>
         <IconSearch className="topbar-search-icon" />
         <input
@@ -100,9 +107,7 @@ export function Topbar() {
       </div>
 
       <div className="topbar-actions">
-        <IconMenuButton icon={IconBell} label="Notifications">
-          <div className="icon-popover-empty">No new notifications</div>
-        </IconMenuButton>
+        <NotificationBell />
         {canSeeAdmin && (
           <button type="button" className="icon-btn" aria-label="Administration" onClick={() => navigate('/admin')}>
             <IconGeneral />
@@ -111,18 +116,115 @@ export function Topbar() {
         <button type="button" className="icon-btn" aria-label="Help" onClick={() => navigate('/help')}>
           <IconHelp />
         </button>
-        <ProfileMenu username={session?.username} initials={initials} onLogout={logout} />
+        <ProfileMenu email={session?.email} initials={initials} onLogout={logout} />
       </div>
     </header>
   );
 }
 
+function NotificationBell() {
+  const { t } = useLocale();
+  const { format } = useTimezone();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  // 30s poll - approval-outcome notifications aren't latency-sensitive.
+  const { data: unread } = useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: notificationApi.unreadCount,
+    refetchInterval: 30000,
+  });
+
+  // Only fetched once the popover is actually open, not continuously.
+  const { data: list } = useQuery({
+    queryKey: ['notifications', 'list'],
+    queryFn: () => notificationApi.list(0, 10),
+    enabled: open,
+  });
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+    queryClient.invalidateQueries({ queryKey: ['notifications', 'list'] });
+  };
+
+  const markReadMutation = useMutation({
+    mutationFn: (id: number) => notificationApi.markRead(id),
+    onSuccess: invalidate,
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: () => notificationApi.markAllRead(),
+    onSuccess: invalidate,
+  });
+
+  const openRow = (notification: NotificationResponse) => {
+    if (!notification.read) {
+      markReadMutation.mutate(notification.id);
+    }
+    setOpen(false);
+    if (notification.link) {
+      navigate(notification.link);
+    }
+  };
+
+  const count = unread?.count ?? 0;
+
+  return (
+    <div className="icon-menu" ref={ref}>
+      <button type="button" className="icon-btn notification-trigger" aria-label={t('topbar.notifications')} onClick={() => setOpen((o) => !o)}>
+        <IconBell />
+        {count > 0 && <span className="notification-badge">{count > 9 ? '9+' : count}</span>}
+      </button>
+      {open && (
+        <div className="icon-popover notification-popover">
+          <div className="notification-popover-header">
+            <span>{t('topbar.notifications')}</span>
+            {count > 0 && (
+              <button type="button" className="notification-mark-all" onClick={() => markAllReadMutation.mutate()}>
+                {t('topbar.markAllRead')}
+              </button>
+            )}
+          </div>
+          {list && list.content.length > 0 ? (
+            list.content.map((notification) => (
+              <button
+                key={notification.id}
+                type="button"
+                className={`notification-row${notification.read ? '' : ' notification-row-unread'}`}
+                onClick={() => openRow(notification)}
+              >
+                <div className="notification-row-title">{notification.title}</div>
+                <div className="notification-row-message">{notification.message}</div>
+                <div className="notification-row-time">{format(notification.createdAt)}</div>
+              </button>
+            ))
+          ) : (
+            <div className="icon-popover-empty">{t('topbar.noNotifications')}</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProfileMenu({
-  username,
+  email,
   initials,
   onLogout,
 }: {
-  username: string | undefined;
+  email: string | undefined;
   initials: string;
   onLogout: () => void;
 }) {
@@ -148,7 +250,7 @@ function ProfileMenu({
       </button>
       {open && (
         <div className="icon-popover">
-          <div className="profile-menu-name">{username}</div>
+          <div className="profile-menu-name">{email}</div>
           <button
             type="button"
             className="profile-menu-item"
@@ -195,38 +297,6 @@ function ProfileMenu({
           </button>
         </div>
       )}
-    </div>
-  );
-}
-
-function IconMenuButton({
-  icon: Icon,
-  label,
-  children,
-}: {
-  icon: (props: { className?: string }) => ReactNode;
-  label: string;
-  children: ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function onClickOutside(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
-  }, []);
-
-  return (
-    <div className="icon-menu" ref={ref}>
-      <button type="button" className="icon-btn" aria-label={label} onClick={() => setOpen((o) => !o)}>
-        <Icon />
-      </button>
-      {open && <div className="icon-popover">{children}</div>}
     </div>
   );
 }

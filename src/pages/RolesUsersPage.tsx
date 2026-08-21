@@ -239,7 +239,6 @@ export function UsersManagementPage() {
   };
 
   const userColumns: DataTableColumn<UserResponse>[] = [
-    { key: 'username', header: t('login.username'), render: (u) => u.username, sortKey: 'username' },
     { key: 'email', header: t('fields.email'), render: (u) => u.email, sortKey: 'email' },
     { key: 'roles', header: t('nav.roles'), render: (u) => <PillList items={u.roles.map((r) => r.label)} /> },
     {
@@ -261,7 +260,7 @@ export function UsersManagementPage() {
       />
 
       {assigningUser && (
-        <Modal title={`${t('pages.accessManagement.editRolesFor')} ${assigningUser.username}`} onClose={() => setAssigningUser(null)}>
+        <Modal title={`${t('pages.accessManagement.editRolesFor')} ${assigningUser.email}`} onClose={() => setAssigningUser(null)}>
           <form onSubmit={handleAssignRoles} className="form-grid">
             <div className="checkbox-group">
               {roles.map((r) => (

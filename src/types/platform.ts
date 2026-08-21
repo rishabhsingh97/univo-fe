@@ -1,5 +1,5 @@
 export interface PlatformLoginRequest {
-  username: string;
+  email: string;
   password: string;
 }
 
@@ -7,7 +7,7 @@ export interface PlatformLoginResponse {
   accessToken: string;
   tokenType: string;
   expiresInSeconds: number;
-  username: string;
+  email: string;
 }
 
 export interface TenantSummaryResponse {
@@ -22,7 +22,6 @@ export interface TenantSummaryResponse {
 export interface CreateTenantRequest {
   tenantCode: string;
   name: string;
-  adminUsername: string;
   adminEmail: string;
   adminPassword: string;
 }
@@ -43,4 +42,26 @@ export interface ModuleResponse {
 export interface CreateModuleRequest {
   moduleKey: string;
   label: string;
+}
+
+export type ServiceStatusLevel = 'UP' | 'DOWN' | 'CONFIGURED' | 'NOT_CONFIGURED' | 'WARNING';
+
+export interface ServiceStatusResponse {
+  name: string;
+  status: ServiceStatusLevel;
+  detail: string | null;
+}
+
+export interface SystemMetricsResponse {
+  heapUsedMb: number;
+  heapMaxMb: number;
+  heapUsagePercent: number;
+  availableProcessors: number;
+  threadCount: number;
+  uptimeSeconds: number;
+}
+
+export interface SystemStatusResponse {
+  services: ServiceStatusResponse[];
+  system: SystemMetricsResponse;
 }

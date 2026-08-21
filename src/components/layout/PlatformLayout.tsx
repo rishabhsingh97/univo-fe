@@ -20,12 +20,13 @@ export function PlatformLayout() {
     <div className="app-main" style={{ height: '100vh' }}>
       <div className="topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <div style={{ fontWeight: 700 }}>RishiERP · Platform Console</div>
+          <div style={{ fontWeight: 700 }}>Univo · Platform Console</div>
           <NavLink to="/platform/clients" style={linkStyle}>Clients</NavLink>
           <NavLink to="/platform/modules" style={linkStyle}>Modules</NavLink>
+          <NavLink to="/platform/status" style={linkStyle}>Status</NavLink>
         </div>
         <div className="topbar-actions">
-          <span style={{ fontSize: 12.5, color: 'var(--color-text-muted)' }}>{session?.username}</span>
+          <span style={{ fontSize: 12.5, color: 'var(--color-text-muted)' }}>{session?.email}</span>
           <Button variant="secondary" onClick={logout}>Log out</Button>
         </div>
       </div>

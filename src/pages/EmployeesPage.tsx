@@ -3,12 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { employeeApi } from '../api/hr/employeeApi';
 import { designationApi } from '../api/hr/designationApi';
-import { employeeDocumentApi } from '../api/hr/employeeDocumentApi';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
 import { useFieldLabels } from '../hooks/useFieldLabels';
+import { EmployeeDocumentsSection } from '../components/EmployeeDocumentsSection';
 import type {
-  EmployeeDocumentResponse,
   EmployeeRequest,
   EmployeeResponse,
   EmploymentType,
@@ -17,83 +16,11 @@ import type {
 import { Badge, Button, Modal, PageHeader, PagedDataTable, SelectField, TextField, statusTone } from '../components/ui';
 import type { ActionMenuItem, DataTableColumn } from '../components/ui';
 
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function EmployeeDocumentsModal({ employee, onClose }: { employee: EmployeeResponse; onClose: () => void }) {
   const { t } = useLocale();
-  const { hasPermission } = useAuth();
-  const queryClient = useQueryClient();
-  const [documentType, setDocumentType] = useState('');
-  const [file, setFile] = useState<File | null>(null);
-
-  const canWrite = hasPermission('hr.document.write');
-  const canDelete = hasPermission('hr.document.delete');
-
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['employee-documents', employee.id] });
-
-  const uploadMutation = useMutation({
-    mutationFn: () => {
-      if (!file) throw new Error('File is required');
-      return employeeDocumentApi.upload(employee.id, documentType, file);
-    },
-    onSuccess: () => {
-      invalidate();
-      setDocumentType('');
-      setFile(null);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => employeeDocumentApi.delete(id),
-    onSuccess: invalidate,
-  });
-
-  const columns: DataTableColumn<EmployeeDocumentResponse>[] = [
-    { key: 'documentType', header: t('pages.employeeDocuments.documentType'), render: (d) => d.documentType },
-    { key: 'fileName', header: t('pages.employeeDocuments.fileName'), render: (d) => d.originalFileName },
-    { key: 'size', header: t('pages.employeeDocuments.fileSize'), render: (d) => formatFileSize(d.fileSize) },
-  ];
-
-  const extraActions = (d: EmployeeDocumentResponse): ActionMenuItem[] => [
-    { label: t('pages.employeeDocuments.download'), onClick: () => employeeDocumentApi.download(d.id, d.originalFileName) },
-  ];
-
   return (
     <Modal title={`${t('pages.employeeDocuments.title')} - ${employee.firstName} ${employee.lastName}`} onClose={onClose}>
-      {canWrite && (
-        <form
-          onSubmit={(event: FormEvent) => {
-            event.preventDefault();
-            uploadMutation.mutate();
-          }}
-          className="form-grid"
-          style={{ marginBottom: 16 }}
-        >
-          <TextField label={t('pages.employeeDocuments.documentType')} value={documentType}
-            onChange={(e) => setDocumentType(e.target.value)} required />
-          <TextField label={t('pages.employeeDocuments.file')} type="file"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)} required />
-          <div className="form-actions">
-            <Button type="submit" disabled={uploadMutation.isPending || !file}>
-              {uploadMutation.isPending ? t('common.saving') : t('pages.employeeDocuments.upload')}
-            </Button>
-          </div>
-        </form>
-      )}
-      <PagedDataTable
-        columns={columns}
-        queryKey={['employee-documents', employee.id]}
-        fetchPage={(page, size, sort) => employeeDocumentApi.list(employee.id, page, size, sort)}
-        getRowKey={(d) => d.id}
-        pageSize={10}
-        emptyMessage={t('pages.employeeDocuments.empty')}
-        onDelete={canDelete ? (d) => deleteMutation.mutate(d.id) : undefined}
-        extraActions={extraActions}
-      />
+      <EmployeeDocumentsSection employeeId={employee.id} />
     </Modal>
   );
 }
@@ -122,11 +49,19 @@ export function EmployeesPage() {
 
   const canManageCredentials = hasPermission('hr.employee.credentials');
   const canViewDocuments = hasPermission('hr.document.read');
+  const canDeactivate = hasPermission('hr.employee.delete');
 
   // Full (unpaginated-ish) lists for the pickers below - independent of the table's own page,
   // since a manager/designation/grade selector needs every option, not just the visible page.
   const { data: allEmployees } = useQuery({ queryKey: ['employees', 'select'], queryFn: () => employeeApi.list(0, 200) });
   const { data: designations } = useQuery({ queryKey: ['designations', 'select'], queryFn: () => designationApi.list(0, 200) });
+  // One bundled call for everything the filter row's dropdowns need, rather than one request
+  // per select filter - statuses come live off the backend EmployeeStatus enum, never hardcoded.
+  const { data: filterOptions } = useQuery({
+    queryKey: ['employees', 'filter-options'],
+    queryFn: employeeApi.getFilterOptions,
+    staleTime: Infinity,
+  });
   const selectedDesignation = designations?.content.find((d) => d.id === form.designationId);
 
   const createMutation = useMutation({
@@ -159,8 +94,19 @@ export function EmployeesPage() {
     },
   });
 
+  const deactivateMutation = useMutation({
+    mutationFn: (id: number) => employeeApi.deactivate(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['employees'] }),
+  });
+
   const columns: DataTableColumn<EmployeeResponse>[] = [
-    { key: 'code', header: fieldLabels.label('employeeCode', t('fields.employeeCode')), render: (e) => e.employeeCode, sortKey: 'employeeCode' },
+    {
+      key: 'code',
+      header: fieldLabels.label('employeeCode', t('fields.employeeCode')),
+      render: (e) => e.employeeCode,
+      sortKey: 'employeeCode',
+      filter: { type: 'text', paramKey: 'employeeCode' },
+    },
     {
       key: 'name',
       header: t('fields.user'),
@@ -171,6 +117,7 @@ export function EmployeesPage() {
         </div>
       ),
       sortKey: 'firstName',
+      filter: { type: 'text', paramKey: 'name', placeholder: t('table.filterNameEmail') },
     },
     {
       key: 'designation',
@@ -181,6 +128,7 @@ export function EmployeesPage() {
           <span className="table-cell-stack-secondary">{e.orgUnitName ?? '-'}</span>
         </div>
       ),
+      filter: { type: 'text', paramKey: 'designationTitle', placeholder: t('table.filterDesignationOrgUnit') },
     },
     {
       key: 'manager',
@@ -194,12 +142,14 @@ export function EmployeesPage() {
         ) : (
           '-'
         ),
+      filter: { type: 'text', paramKey: 'managerName', placeholder: t('table.filterManagerEmail') },
     },
     {
       key: 'status',
       header: t('fields.status'),
       render: (e) => <Badge tone={statusTone(e.status)}>{e.status}</Badge>,
       sortKey: 'status',
+      filter: { type: 'select', paramKey: 'status', options: filterOptions?.statuses ?? [] },
     },
   ];
 
@@ -222,6 +172,15 @@ export function EmployeesPage() {
     }
     if (canViewDocuments) {
       items.push({ label: t('pages.employeeDocuments.button'), onClick: () => setDocumentsFor(e) });
+    }
+    if (canDeactivate && e.status === 'ACTIVE') {
+      items.push({
+        label: t('pages.employees.deactivate'),
+        tone: 'danger',
+        disabled: deactivateMutation.isPending,
+        onClick: () =>
+          window.confirm(t('pages.employees.confirmDeactivate')) && deactivateMutation.mutate(e.id),
+      });
     }
     return items;
   };
@@ -282,6 +241,8 @@ export function EmployeesPage() {
           )}
           <TextField label={t('fields.pan')} value={form.pan ?? ''} onChange={(e) => setForm({ ...form, pan: e.target.value })} />
           <TextField label={t('fields.uan')} value={form.uan ?? ''} onChange={(e) => setForm({ ...form, uan: e.target.value })} />
+          <TextField label={t('fields.linkedinUrl')} type="url" value={form.linkedinUrl ?? ''} onChange={(e) => setForm({ ...form, linkedinUrl: e.target.value })} />
+          <TextField label={t('fields.githubUrl')} type="url" value={form.githubUrl ?? ''} onChange={(e) => setForm({ ...form, githubUrl: e.target.value })} />
             <div className="form-actions" style={{ gridColumn: '1 / -1' }}>
               <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending ? t('pages.employees.adding') : t('pages.employees.addButton')}
@@ -305,7 +266,7 @@ export function EmployeesPage() {
       {credentials && (
         <Modal title={t('pages.employees.credentialsTitle')} onClose={() => setCredentials(null)}>
           <p>{t('pages.employees.credentialsHint')}</p>
-          <TextField label={t('fields.username')} value={credentials.username} readOnly />
+          <TextField label={t('fields.email')} value={credentials.email} readOnly />
           <TextField label={t('fields.temporaryPassword')} value={credentials.temporaryPassword} readOnly />
           <div className="form-actions">
             <Button type="button" onClick={() => setCredentials(null)}>{t('common.close')}</Button>

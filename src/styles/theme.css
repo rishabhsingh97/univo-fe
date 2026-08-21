@@ -4,12 +4,20 @@
  * page inventing its own colors.
  */
 :root {
-  --color-bg: #eceff6;
+  /* Light-mode tonal ladder, each step far enough apart to read as a distinct surface at a
+     glance: page canvas (--color-bg) < header/hover band (--color-surface-alt) < border <
+     card/sidebar/table-body white (--color-surface). Kept neutral (near-zero hue tint) rather
+     than the more saturated blue-lavender an earlier pass landed on - a tinted fill on table
+     headers/hover rows read as loud rather than "premium enterprise", where separation is
+     usually carried by a crisp border and confident typography over a heavy color block (see
+     .table th's border-bottom in ui.css). Text tokens pushed toward the ends of the range
+     instead of sitting in a "safe but flat" middle gray. */
+  --color-bg: #e9ebf0;
   --color-surface: #ffffff;
-  --color-surface-alt: #e6e9f2;
-  --color-border: #ccd1e0;
-  --color-text: #10121a;
-  --color-text-muted: #474d61;
+  --color-surface-alt: #f1f2f5;
+  --color-border: #c3c7d1;
+  --color-text: #0a0b0f;
+  --color-text-muted: #454955;
   --color-primary: #2f4fdb;
   --color-primary-hover: #2540b0;
   --color-primary-contrast: #ffffff;
@@ -18,7 +26,10 @@
   --color-danger-bg: #fbe7e6;
   --color-success: #0b7d52;
   --color-success-bg: #dcf3e9;
-  --color-warning: #9c4907;
+  /* Brightened from a muted brown (#9c4907) to an actual vivid orange - it's now also reused
+     as a dashboard accent color (see dashboard.css), not just rare inline warning text, so it
+     needed real punch rather than reading as "dull". */
+  --color-warning: #c2560a;
   --color-warning-bg: #fbead0;
 
   /*
@@ -30,6 +41,15 @@
   --color-primary-active: color-mix(in srgb, var(--color-primary-hover) 85%, black);
   --color-primary-soft: color-mix(in srgb, var(--color-primary) 14%, transparent);
   --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+
+  /* The table header (see .table th in ui.css) is a dark SHADE of the same brand blue rather
+     than an unrelated neutral navy - same hue as the "Add x" button and every other primary
+     surface, just much darker, so it reads as one coordinated color system instead of two
+     competing dark tones. Derived from --color-primary like everything else here, so a tenant's
+     branded color carries all the way into the table header too. */
+  --table-header-bg: color-mix(in srgb, var(--color-primary) 32%, black);
+  --table-header-text: color-mix(in srgb, var(--color-primary) 22%, white);
+  --table-header-hover-text: #ffffff;
 
   --space-1: 4px;
   --space-2: 6px;
@@ -71,9 +91,10 @@
   --color-warning: #f7a63f;
   --color-warning-bg: rgba(247, 166, 63, 0.12);
 
-  /* --color-primary-active/-soft/--gradient-primary are intentionally NOT redeclared here -
-     they stay defined once in :root as color-mix() formulas over --color-primary/-hover, so
-     they automatically pick up whichever theme (or tenant branding override) is active. */
+  /* --color-primary-active/-soft/--gradient-primary/--table-header-* are intentionally NOT
+     redeclared here - they stay defined once in :root as color-mix() formulas over
+     --color-primary/-hover, so they automatically pick up whichever theme (or tenant branding
+     override) is active. */
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);

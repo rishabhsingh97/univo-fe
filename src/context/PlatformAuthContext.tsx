@@ -4,7 +4,7 @@ import { TOKEN_STORAGE_KEY } from '../api/client';
 import type { PlatformLoginRequest } from '../types/platform';
 
 interface PlatformSession {
-  username: string;
+  email: string;
 }
 
 interface PlatformAuthContextValue {
@@ -35,7 +35,7 @@ export function PlatformAuthProvider({ children }: { children: ReactNode }) {
   const login = async (request: PlatformLoginRequest) => {
     const response = await platformAuthApi.login(request);
     localStorage.setItem(TOKEN_STORAGE_KEY, response.accessToken);
-    const nextSession: PlatformSession = { username: response.username };
+    const nextSession: PlatformSession = { email: response.email };
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextSession));
     setSession(nextSession);
   };

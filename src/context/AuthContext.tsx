@@ -2,11 +2,11 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 import { authApi } from '../api/auth/authApi';
 import { meApi } from '../api/auth/meApi';
 import { TOKEN_STORAGE_KEY } from '../api/client';
-import type { LoginRequest } from '../types/auth';
+import type { GoogleLoginRequest, LoginRequest, LoginResponse } from '../types/auth';
 
 interface Session {
   tenantCode: string;
-  username: string;
+  email: string;
   roles: string[];
   roleLabels: string[];
   permissions: string[];
@@ -18,6 +18,11 @@ interface Session {
 interface AuthContextValue {
   session: Session | null;
   login: (request: LoginRequest) => Promise<void>;
+  loginWithGoogle: (request: GoogleLoginRequest) => Promise<void>;
+  /** Starts a session from a LoginResponse the caller already has in hand (e.g. the signup
+   * wizard's step 3, which gets one back directly from POST .../step3) instead of making a
+   * second round trip through login(). */
+  setSessionFromLoginResponse: (tenantCode: string, response: LoginResponse) => void;
   logout: () => void;
   updateTimezone: (timezone: string | null) => Promise<void>;
   hasPermission: (name: string) => boolean;
@@ -56,10 +61,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (request: LoginRequest) => {
     const response = await authApi.login(request);
+    applySession(request.tenantCode, response);
+  };
+
+  const loginWithGoogle = async (request: GoogleLoginRequest) => {
+    const response = await authApi.loginWithGoogle(request);
+    applySession(request.tenantCode, response);
+  };
+
+  const applySession = (tenantCode: string, response: LoginResponse) => {
     localStorage.setItem(TOKEN_STORAGE_KEY, response.accessToken);
     const nextSession: Session = {
-      tenantCode: request.tenantCode,
-      username: response.username,
+      tenantCode,
+      email: response.email,
       roles: response.roles,
       roleLabels: response.roleLabels,
       permissions: response.permissions,
@@ -103,7 +117,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, login, logout, updateTimezone, hasPermission, hasAnyPermission, markPasswordChanged }}
+      value={{
+        session,
+        login,
+        loginWithGoogle,
+        setSessionFromLoginResponse: applySession,
+        logout,
+        updateTimezone,
+        hasPermission,
+        hasAnyPermission,
+        markPasswordChanged,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -89,7 +89,7 @@ function applyBranding(branding: TenantBrandingResponse) {
   setOrRemoveCssVar('--font-sans', branding.fontFamily);
   applyThemeVars(branding.themeVars);
   applyFavicon(branding.faviconUrl);
-  document.title = branding.companyName ? `${branding.companyName} - ERP` : 'ERP';
+  document.title = branding.companyName ? `${branding.companyName} - Univo` : 'Univo';
 }
 
 export function BrandingProvider({ children }: { children: ReactNode }) {

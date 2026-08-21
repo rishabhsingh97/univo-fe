@@ -4,13 +4,30 @@ import { useLocale } from '../../context/LocaleContext';
 import { useBranding } from '../../context/BrandingContext';
 import { useAuth } from '../../context/AuthContext';
 import { buildNavModules, canSeeLeaf } from './navConfig';
-import { IconOverview, IconChevronRight, IconChevronDown, IconCheck, IconLock } from './navIcons';
+import { IconOverview, IconChevronRight, IconChevronDown, IconCheck, IconLock, IconX } from './navIcons';
 import { Modal } from '../ui/Modal';
 import './layout.css';
 
-export function Sidebar() {
+interface SidebarProps {
+  /** Whether the drawer is open on a mobile-width viewport. Ignored above the drawer breakpoint
+   * (see .sidebar in layout.css), where the sidebar is always visible inline. */
+  mobileOpen: boolean;
+  onCloseMobile: () => void;
+}
+
+export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
   const { t } = useLocale();
   const { branding } = useBranding();
+  // The drawer's CSS transition would otherwise fire once on first paint too (there's no prior
+  // computed transform for the browser to be "changing from", but Vite's dev-mode CSS
+  // injection + the first effect pass can still land a frame late enough to make that initial
+  // state application read as a slide animation) - skip the transition for exactly one frame so
+  // mount is always instant, and only real open/close toggles animate.
+  const [transitionsReady, setTransitionsReady] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setTransitionsReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
   const { session, hasAnyPermission } = useAuth();
   const location = useLocation();
 
@@ -74,20 +91,26 @@ export function Sidebar() {
   }, []);
 
   const brandName = branding?.companyName ?? t('app.name');
+  const sidebarClassName = `sidebar${mobileOpen ? ' mobile-open' : ''}${transitionsReady ? '' : ' no-transition'}`;
 
   if (!activeModule) {
     // No module has any visible items for this user's permission set.
     return (
-      <aside className="sidebar">
-        <SidebarBrand branding={branding} brandName={brandName} />
-        <DashboardLink t={t} />
-      </aside>
+      <>
+        {mobileOpen && <div className="sidebar-backdrop" onClick={onCloseMobile} />}
+        <aside className={sidebarClassName}>
+          <SidebarBrand branding={branding} brandName={brandName} onCloseMobile={onCloseMobile} />
+          <DashboardLink t={t} />
+        </aside>
+      </>
     );
   }
 
   return (
-    <aside className="sidebar">
-      <SidebarBrand branding={branding} brandName={brandName} />
+    <>
+      {mobileOpen && <div className="sidebar-backdrop" onClick={onCloseMobile} />}
+      <aside className={sidebarClassName}>
+        <SidebarBrand branding={branding} brandName={brandName} onCloseMobile={onCloseMobile} />
 
       {visibleModules.length > 1 && (
         <div className="module-switch" ref={switcherRef}>
@@ -198,24 +221,32 @@ export function Sidebar() {
           </details>
         );
       })}
-    </aside>
+      </aside>
+    </>
   );
 }
 
 function SidebarBrand({
   branding,
   brandName,
+  onCloseMobile,
 }: {
   branding: { logoUrl?: string | null } | null | undefined;
   brandName: string;
+  onCloseMobile: () => void;
 }) {
   return (
     <div className="sidebar-brand">
-      {branding?.logoUrl ? (
-        <img src={branding.logoUrl} alt={brandName} style={{ maxHeight: 28, maxWidth: '100%' }} />
-      ) : (
-        brandName
-      )}
+      <span className="sidebar-brand-mark">
+        {branding?.logoUrl ? (
+          <img src={branding.logoUrl} alt={brandName} style={{ maxHeight: 28, maxWidth: '100%' }} />
+        ) : (
+          brandName
+        )}
+      </span>
+      <button type="button" className="sidebar-close" aria-label="Close menu" onClick={onCloseMobile}>
+        <IconX />
+      </button>
     </div>
   );
 }

@@ -1,14 +1,19 @@
 export interface LoginRequest {
   tenantCode: string;
-  username: string;
+  email: string;
   password: string;
+}
+
+export interface GoogleLoginRequest {
+  tenantCode: string;
+  idToken: string;
 }
 
 export interface LoginResponse {
   accessToken: string;
   tokenType: string;
   expiresInSeconds: number;
-  username: string;
+  email: string;
   roles: string[];
   /** Display names for `roles`, same order - render these, not `roles` itself. */
   roleLabels: string[];
@@ -52,12 +57,16 @@ export interface RoleRequest {
 
 export interface UserResponse {
   id: number;
-  username: string;
   email: string;
   fullName: string | null;
   status: 'ACTIVE' | 'INACTIVE';
   timezone: string | null;
   roles: RoleResponse[];
+  hasAvatar: boolean;
+  address: string | null;
+  bloodGroup: string | null;
+  phoneNumber: string | null;
+  bio: string | null;
 }
 
 export interface AssignRolesRequest {
@@ -66,4 +75,11 @@ export interface AssignRolesRequest {
 
 export interface UpdateTimezoneRequest {
   timezone: string | null;
+}
+
+export interface UpdateProfileRequest {
+  address?: string | null;
+  bloodGroup?: string | null;
+  phoneNumber?: string | null;
+  bio?: string | null;
 }

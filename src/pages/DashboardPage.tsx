@@ -100,7 +100,7 @@ export function DashboardPage() {
 
   return (
     <div>
-      <PageHeader title={t('pages.dashboard.title')} description={`${dateLabel} · Signed in as ${session?.username}`} />
+      <PageHeader title={t('pages.dashboard.title')} description={`${dateLabel} · Signed in as ${session?.email}`} />
 
       {!hasAnyKpi && (
         <Card>
@@ -114,7 +114,10 @@ export function DashboardPage() {
       {hasAnyKpi && (
         <div className="dash-kpis">
           {canViewEmployees && (
-            <Card className="dash-kpi">
+            <Card className="dash-kpi dash-accent-1">
+              <div className="dash-kpi-icon">
+                <IconPeople />
+              </div>
               <div className="dash-kpi-label">Headcount</div>
               <div className="dash-kpi-value">
                 {headcountQuery.isLoading ? '—' : (headcountQuery.data?.totalElements ?? 0)}
@@ -122,7 +125,10 @@ export function DashboardPage() {
             </Card>
           )}
           {canViewOrgUnits && (
-            <Card className="dash-kpi">
+            <Card className="dash-kpi dash-accent-2">
+              <div className="dash-kpi-icon">
+                <IconOrgUnits />
+              </div>
               <div className="dash-kpi-label">Org Units</div>
               <div className="dash-kpi-value">
                 {orgUnitsQuery.isLoading ? '—' : (orgUnitsQuery.data?.totalElements ?? 0)}
@@ -130,7 +136,10 @@ export function DashboardPage() {
             </Card>
           )}
           {canViewAttendance && (
-            <Card className="dash-kpi">
+            <Card className="dash-kpi dash-accent-3">
+              <div className="dash-kpi-icon">
+                <IconClock />
+              </div>
               <div className="dash-kpi-label">Attendance today</div>
               <div className="dash-kpi-value">
                 {attendanceTodayQuery.isLoading ? '—' : attendancePercent === null ? '—' : `${attendancePercent}%`}
@@ -143,7 +152,10 @@ export function DashboardPage() {
             </Card>
           )}
           {canViewLeave && (
-            <Card className="dash-kpi">
+            <Card className="dash-kpi dash-accent-1">
+              <div className="dash-kpi-icon">
+                <IconLeave />
+              </div>
               <div className="dash-kpi-label">Pending leave requests</div>
               <div className="dash-kpi-value">
                 {pendingLeaveCountQuery.isLoading ? '—' : (pendingLeaveCountQuery.data?.count ?? 0)}
@@ -192,26 +204,34 @@ export function DashboardPage() {
               </div>
               <div className="dash-quick-links">
                 {canViewEmployees && (
-                  <Link className="dash-quick-link" to="/employees">
-                    <IconPeople className="link-icon" />
+                  <Link className="dash-quick-link dash-accent-1" to="/employees">
+                    <span className="dash-quick-link-icon">
+                      <IconPeople />
+                    </span>
                     Employees
                   </Link>
                 )}
                 {canViewAttendance && (
-                  <Link className="dash-quick-link" to="/attendance">
-                    <IconClock className="link-icon" />
+                  <Link className="dash-quick-link dash-accent-3" to="/attendance">
+                    <span className="dash-quick-link-icon">
+                      <IconClock />
+                    </span>
                     Attendance
                   </Link>
                 )}
                 {canViewLeave && (
-                  <Link className="dash-quick-link" to="/leave">
-                    <IconLeave className="link-icon" />
+                  <Link className="dash-quick-link dash-accent-1" to="/leave">
+                    <span className="dash-quick-link-icon">
+                      <IconLeave />
+                    </span>
                     Leave
                   </Link>
                 )}
                 {canViewOrgUnits && (
-                  <Link className="dash-quick-link" to="/org-units">
-                    <IconOrgUnits className="link-icon" />
+                  <Link className="dash-quick-link dash-accent-2" to="/org-units">
+                    <span className="dash-quick-link-icon">
+                      <IconOrgUnits />
+                    </span>
                     Org Units
                   </Link>
                 )}

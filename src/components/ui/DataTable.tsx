@@ -1,9 +1,14 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import './ui.css';
 import { Spinner } from './Spinner';
 import { Button } from './Button';
 import { ActionMenu, deleteAction, editAction, viewAction, type ActionMenuItem } from './ActionMenu';
 import { useLocale } from '../../context/LocaleContext';
+
+export type DataTableColumnFilter =
+  | { type: 'text'; paramKey?: string; placeholder?: string }
+  | { type: 'select'; paramKey?: string; options: string[]; placeholder?: string };
 
 export interface DataTableColumn<T> {
   key: string;
@@ -15,6 +20,15 @@ export interface DataTableColumn<T> {
    * real, directly-sortable entity property (computed/joined display text, action buttons).
    */
   sortKey?: string;
+  /**
+   * Server-side column filter, exposed as a small filter icon next to the column header that
+   * opens a popover - same shape as sorting (one request param per column, sent alongside
+   * page/size/sort). `paramKey` is the backend query param name and defaults to `key` when
+   * omitted (they differ when, e.g., the "designation" column filters on `designationTitle`).
+   * `select` options must come from wherever the page sources them (a live backend
+   * enum/master-data list) - never a value hardcoded here.
+   */
+  filter?: DataTableColumnFilter;
 }
 
 export interface DataTableSort {
@@ -37,6 +51,11 @@ export interface DataTablePagination {
   onSortChange?: (key: string) => void;
   /** Omit to hide the page-size selector entirely (a page not wired up for it). */
   onSizeChange?: (size: number) => void;
+  /** Filtering is server-side (same request as the page itself), keyed by each column filter's
+   * `paramKey` - omit both to render columns with no filter icon at all, regardless of whether
+   * individual columns declare a `filter`. */
+  filters?: Record<string, string>;
+  onFilterChange?: (paramKey: string, value: string) => void;
 }
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -86,6 +105,7 @@ export function DataTable<T>({
   const { t } = useLocale();
   const resolvedEmptyMessage = emptyMessage ?? t('table.empty');
 
+  const filtersEnabled = Boolean(pagination?.onFilterChange);
   const hasRowActions = Boolean(onView || onEdit || onDelete || extraActions);
   const allColumns: DataTableColumn<T>[] = hasRowActions
     ? [
@@ -119,21 +139,37 @@ export function DataTable<T>({
                 const sortable = Boolean(col.sortKey && pagination?.onSortChange);
                 const active = sortable && pagination?.sort?.key === col.sortKey;
                 const stickyClass = col.key === 'actions' ? 'table-cell-sticky-right' : undefined;
-                if (!sortable) {
-                  return <th key={col.key} className={stickyClass}>{col.header}</th>;
-                }
+                const filter = filtersEnabled ? col.filter : undefined;
+                const paramKey = filter ? (filter.paramKey ?? col.key) : undefined;
+                const filterValue = paramKey ? (pagination?.filters?.[paramKey] ?? '') : '';
+
+                const headerText = sortable ? (
+                  <button
+                    type="button"
+                    className={`table-sort-button${active ? ' active' : ''}`}
+                    onClick={() => pagination?.onSortChange?.(col.sortKey as string)}
+                  >
+                    {col.header}
+                    <span className="table-sort-arrow" aria-hidden="true">
+                      {active ? (pagination?.sort?.direction === 'asc' ? '▲' : '▼') : '⇅'}
+                    </span>
+                  </button>
+                ) : (
+                  col.header
+                );
+
                 return (
                   <th key={col.key} className={stickyClass}>
-                    <button
-                      type="button"
-                      className={`table-sort-button${active ? ' active' : ''}`}
-                      onClick={() => pagination?.onSortChange?.(col.sortKey as string)}
-                    >
-                      {col.header}
-                      <span className="table-sort-arrow" aria-hidden="true">
-                        {active ? (pagination?.sort?.direction === 'asc' ? '▲' : '▼') : '⇅'}
-                      </span>
-                    </button>
+                    <span className="table-header-cell">
+                      {headerText}
+                      {filter && paramKey && (
+                        <ColumnFilterButton
+                          filter={filter}
+                          value={filterValue}
+                          onChange={(next) => pagination?.onFilterChange?.(paramKey, next)}
+                        />
+                      )}
+                    </span>
                   </th>
                 );
               })}
@@ -150,13 +186,30 @@ export function DataTable<T>({
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={allColumns.length} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>
+                {/* height (not just padding) so this row fills .table-wrapper's own min-height
+                    instead of leaving bare, un-hoverable wrapper space below a short row - that
+                    gap used to read as "half the table" not highlighting on hover. */}
+                <td colSpan={allColumns.length} style={{ height: 200, textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   {resolvedEmptyMessage}
                 </td>
               </tr>
             ) : (
               rows.map((row) => (
-                <tr key={getRowKey(row)}>
+                <tr
+                  key={getRowKey(row)}
+                  className={onView ? 'table-row-clickable' : undefined}
+                  onClick={
+                    onView
+                      ? (e) => {
+                          // Row-level click is a convenience for "view" - actual buttons/links
+                          // inside the row (the actions menu, an inline link cell, etc.) must
+                          // keep their own behavior instead of also triggering this.
+                          if ((e.target as HTMLElement).closest('button, a')) return;
+                          onView(row);
+                        }
+                      : undefined
+                  }
+                >
                   {allColumns.map((col) => (
                     <td key={col.key} className={col.key === 'actions' ? 'table-cell-sticky-right' : undefined}>
                       {col.render(row)}
@@ -263,5 +316,132 @@ function PageJumpInput({
       />
       {t('table.of').replace('{totalPages}', String(totalPages))}
     </span>
+  );
+}
+
+/**
+ * The per-column filter trigger: a small funnel icon next to the header text (highlighted when
+ * that column has an active filter) that opens a popover with just that column's control.
+ * Portaled to <body> and positioned from the trigger's own viewport rect, same technique as
+ * ActionMenu's "⋮" popover, for the same reason - table cells sit inside
+ * .table-wrapper/.table-shell's overflow:auto/hidden, which would otherwise clip a popover
+ * rendered inline instead of letting it float above the table.
+ */
+function ColumnFilterButton({
+  filter,
+  value,
+  onChange,
+}: {
+  filter: DataTableColumnFilter;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const { t } = useLocale();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open) setDraft(value);
+  }, [open, value]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function onClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target) || popoverRef.current?.contains(target)) {
+        return;
+      }
+      setOpen(false);
+    }
+    function onScroll() {
+      setOpen(false);
+    }
+
+    document.addEventListener('mousedown', onClickOutside);
+    document.addEventListener('scroll', onScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside);
+      document.removeEventListener('scroll', onScroll, true);
+    };
+  }, [open]);
+
+  const toggle = () => {
+    if (!open && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setCoords({ top: rect.bottom + 6, left: rect.left });
+    }
+    setOpen((o) => !o);
+  };
+
+  const apply = (next: string) => {
+    onChange(next);
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={`table-filter-trigger${value ? ' active' : ''}`}
+        aria-label={t('table.filterColumn')}
+        aria-expanded={open}
+        onClick={toggle}
+      >
+        <FilterIcon />
+      </button>
+      {open &&
+        coords &&
+        createPortal(
+          <div ref={popoverRef} className="table-filter-popover" style={{ position: 'fixed', top: coords.top, left: coords.left }}>
+            {filter.type === 'text' ? (
+              <>
+                <input
+                  type="text"
+                  className="input"
+                  autoFocus
+                  placeholder={filter.placeholder}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') apply(draft);
+                  }}
+                />
+                <div className="table-filter-popover-actions">
+                  <Button type="button" variant="secondary" className="btn-sm" onClick={() => apply('')}>
+                    {t('common.clear')}
+                  </Button>
+                  <Button type="button" variant="primary" className="btn-sm" onClick={() => apply(draft)}>
+                    {t('table.apply')}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <select
+                className="select"
+                autoFocus
+                value={value}
+                onChange={(e) => apply(e.target.value)}
+              >
+                <option value="">{filter.placeholder ?? t('table.allValues')}</option>
+                {filter.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            )}
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+}
+
+function FilterIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 4h18l-7 8.46V19l-4 2v-8.54L3 4Z" />
+    </svg>
   );
 }

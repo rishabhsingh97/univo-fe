@@ -22,6 +22,11 @@
   transform: none !important;
 }
 
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 12.5px;
+}
+
 .btn:active:not(:disabled) {
   transform: translateY(1px);
 }
@@ -132,7 +137,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
@@ -154,10 +159,15 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-weight: 700;
-  color: var(--color-text-muted);
+  color: var(--table-header-text);
   padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface-alt);
+  /* Confidently dark in light mode (not another shade of light gray) - a light-on-light fill
+     never reads as high-contrast no matter how far apart the two tones get. See
+     --table-header-bg/-text in theme.css; dark mode reuses --color-surface-alt/-text-muted
+     since a dark app already gives that pairing enough contrast on its own. The primary-color
+     border underneath doubles as a small brand touch under an otherwise neutral header. */
+  border-bottom: 2px solid var(--color-primary);
+  background: var(--table-header-bg);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -179,7 +189,7 @@
 }
 
 .table-sort-button:hover {
-  color: var(--color-text);
+  color: var(--table-header-hover-text);
 }
 
 .table-sort-button.active {
@@ -191,6 +201,65 @@
   opacity: 0.7;
 }
 
+/* Header text + optional filter trigger sit side by side without disturbing the sort button's
+   own layout (still its own flex row inside here when the column is also sortable). */
+.table-header-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Small filter trigger next to a column header - no permanent row, no layout shift on toggle.
+   `.active` (a value is currently applied to this column) uses the primary color so a filtered
+   column stays visually flagged even with its popover closed. */
+.table-filter-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--table-header-text);
+  opacity: 0.7;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.table-filter-trigger:hover {
+  opacity: 1;
+  background: var(--table-header-hover-text);
+  color: var(--table-header-bg);
+}
+
+.table-filter-trigger.active {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+/* Portaled to <body> and positioned inline from the trigger's viewport rect (ColumnFilterButton
+   in DataTable.tsx) - same shell language as ActionMenu's popover (.action-menu-popover). */
+.table-filter-popover {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 220px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-3);
+  z-index: 9999;
+}
+
+.table-filter-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
 .table th:first-child {
   padding-left: var(--space-5);
 }
@@ -200,7 +269,7 @@
 }
 
 .table td {
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -228,11 +297,24 @@
 }
 
 .table tbody tr {
-  transition: background-color 0.1s ease;
+  transition: background-color 0.1s ease, box-shadow 0.1s ease;
+}
+
+/* Faint zebra striping - just enough to help the eye track a row across a wide table, not
+   enough to compete with the hover/selected states below. */
+.table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--color-surface-alt) 45%, var(--color-surface));
 }
 
 .table tbody tr:hover {
   background: var(--color-primary-soft);
+  /* A left accent bar on hover (inset, so it never shifts layout) reads as a more deliberate,
+     "designed" interaction than a flat color swap alone. */
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.table-row-clickable {
+  cursor: pointer;
 }
 
 /* Pins the Actions column to the right edge so it stays reachable when a wide table scrolls
@@ -428,7 +510,11 @@
 
 .modal-panel {
   width: 100%;
-  max-width: 520px;
+  /* At least 60% of the viewport, capped so it doesn't sprawl on an ultra-wide monitor - never
+     shrinks below 60vw (min-width wins over width when the two conflict), and 60vw is always
+     narrower than the viewport itself so this can never force horizontal overflow. */
+  min-width: 60vw;
+  max-width: 960px;
   max-height: calc(100vh - 96px);
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
@@ -643,4 +729,282 @@
   margin-top: 0;
   margin-bottom: var(--space-5);
   font-size: 23px;
+}
+
+/* ---------- Auth shell (split brand/form layout) ----------
+   Used by LoginPage/PlatformLoginPage/the signup wizard via components/auth/AuthShell.tsx.
+   Scoped under .auth-* rather than widening .input/.btn/.card globally, so this upgrade stays
+   contained to the auth pages instead of changing density everywhere else in the app. */
+.auth-shell {
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  background: var(--color-bg);
+}
+
+.auth-brand-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px 44px;
+  overflow: hidden;
+  color: #fff;
+  background: linear-gradient(155deg, var(--color-primary) 0%, var(--color-primary-hover) 55%, var(--color-primary-active) 100%);
+}
+
+.auth-brand-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(480px circle at 12% 8%, rgba(255, 255, 255, 0.16), transparent 60%),
+    radial-gradient(420px circle at 92% 96%, rgba(255, 255, 255, 0.12), transparent 55%);
+  pointer-events: none;
+}
+
+.auth-brand-mark {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.auth-brand-mark-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  flex-shrink: 0;
+}
+
+.auth-brand-copy {
+  position: relative;
+  max-width: 380px;
+}
+
+.auth-brand-copy h2 {
+  font-size: clamp(26px, 3vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0 0 14px;
+  color: #fff;
+}
+
+.auth-brand-copy p {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.82);
+  margin: 0;
+}
+
+.auth-brand-stats {
+  position: relative;
+  display: flex;
+  gap: 28px;
+}
+
+.auth-brand-stat-num {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.auth-brand-stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+  margin-top: 2px;
+}
+
+.auth-form-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.auth-card {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  padding: 8px 4px;
+  animation: modal-in 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.auth-card-wide {
+  max-width: 780px;
+}
+
+.auth-card h1 {
+  margin: 0 0 6px;
+  font-size: 25px;
+  letter-spacing: -0.015em;
+}
+
+.auth-card-subtitle {
+  margin: 0 0 26px;
+  font-size: 13.5px;
+  color: var(--color-text-muted);
+}
+
+/* Slightly larger, calmer controls than the app's default density - a form someone fills out
+   once deserves a bit more breathing room than a dense admin table. */
+.auth-card .input,
+.auth-card .select {
+  padding: 11px 13px;
+  font-size: 14.5px;
+  border-radius: var(--radius-md);
+}
+
+.auth-card .field-label {
+  font-size: 13px;
+}
+
+.auth-card .btn {
+  padding: 12px var(--space-5);
+  font-size: 14.5px;
+  border-radius: var(--radius-md);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.auth-divider span {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.auth-links {
+  margin-top: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-links a {
+  font-size: 13px;
+  text-decoration: none;
+  color: var(--color-text-muted);
+}
+
+.auth-links a:hover {
+  color: var(--color-primary);
+}
+
+/* ---------- Signup stepper ---------- */
+.signup-stepper {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 26px;
+}
+
+.signup-stepper-step {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.signup-stepper-step:last-child {
+  flex: none;
+}
+
+.signup-stepper-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.signup-stepper-step.done .signup-stepper-circle {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.signup-stepper-step.current .signup-stepper-circle {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.signup-stepper-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  margin-left: 8px;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+.signup-stepper-step.current .signup-stepper-label {
+  color: var(--color-text);
+}
+
+.signup-stepper-line {
+  flex: 1;
+  height: 1.5px;
+  background: var(--color-border);
+  margin: 0 10px;
+  min-width: 16px;
+}
+
+.signup-stepper-line.done {
+  background: var(--color-primary);
+}
+
+/* Placed after every unconditional .auth-* rule above (not alongside .auth-shell's own base
+   rule near the top of this section) - an unconditional rule for the same selector appearing
+   later in the file wins the cascade regardless of a media query matching, so this override has
+   to be the last word for .auth-brand-panel/.auth-shell to actually take effect on narrow
+   viewports. */
+@media (max-width: 860px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+  }
+  .auth-brand-panel {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .signup-stepper-label {
+    display: none;
+  }
+}
+
+/* Full-width feel on mobile for the app's most-reused surface - .card's desktop padding
+   (var(--space-5) = 20px on all four sides) reads as wasted edge space stacked on top of
+   .main-content's own reduced mobile padding (see layout.css). */
+@media (max-width: 860px) {
+  .card {
+    padding: var(--space-4);
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }

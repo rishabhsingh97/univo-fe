@@ -251,3 +251,19 @@ export function IconLock(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function IconMenu(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </Icon>
+  );
+}
+
+export function IconX(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M6 6l12 12M18 6L6 18" />
+    </Icon>
+  );
+}

@@ -8,6 +8,7 @@ import type { GenerateCredentialsResponse } from '../types/hr';
 import { Badge, Button, Card, Modal, PageHeader, PagedDataTable, Spinner, TextField, statusTone } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
 import type { EmployeeResponse } from '../types/hr';
+import { EmployeeDocumentsSection } from '../components/EmployeeDocumentsSection';
 
 export function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,7 @@ export function EmployeeDetailPage() {
   const [credentials, setCredentials] = useState<GenerateCredentialsResponse | null>(null);
 
   const canManageCredentials = hasPermission('hr.employee.credentials');
+  const canViewDocuments = hasPermission('hr.document.read');
 
   const { data: employee, isLoading } = useQuery({
     queryKey: ['employees', employeeId],
@@ -81,6 +83,14 @@ export function EmployeeDetailPage() {
           <div className="detail-row"><dt>{t('fields.dateOfJoining')}</dt><dd>{employee.dateOfJoining}</dd></div>
           <div className="detail-row"><dt>{t('fields.pan')}</dt><dd>{employee.pan ?? '-'}</dd></div>
           <div className="detail-row"><dt>{t('fields.uan')}</dt><dd>{employee.uan ?? '-'}</dd></div>
+          <div className="detail-row">
+            <dt>{t('fields.linkedinUrl')}</dt>
+            <dd>{employee.linkedinUrl ? <a href={employee.linkedinUrl} target="_blank" rel="noreferrer">{employee.linkedinUrl}</a> : '-'}</dd>
+          </div>
+          <div className="detail-row">
+            <dt>{t('fields.githubUrl')}</dt>
+            <dd>{employee.githubUrl ? <a href={employee.githubUrl} target="_blank" rel="noreferrer">{employee.githubUrl}</a> : '-'}</dd>
+          </div>
         </dl>
       </Card>
 
@@ -88,7 +98,7 @@ export function EmployeeDetailPage() {
         <h3 style={{ marginTop: 0 }}>{t('fields.access')}</h3>
         {employee.hasUserAccount ? (
           <div className="row-actions">
-            <Badge tone="success">{employee.username}</Badge>
+            <Badge tone="success">{employee.email}</Badge>
             {canManageCredentials && (
               <Button
                 variant="secondary"
@@ -111,6 +121,13 @@ export function EmployeeDetailPage() {
         )}
       </Card>
 
+      {canViewDocuments && (
+        <Card style={{ marginTop: 16 }}>
+          <h3 style={{ marginTop: 0 }}>{t('pages.employeeDocuments.title')}</h3>
+          <EmployeeDocumentsSection employeeId={employeeId} />
+        </Card>
+      )}
+
       <Card style={{ marginTop: 16 }}>
         <h3 style={{ marginTop: 0 }}>{t('pages.employees.directReports')}</h3>
         <PagedDataTable
@@ -127,7 +144,7 @@ export function EmployeeDetailPage() {
       {credentials && (
         <Modal title={t('pages.employees.credentialsTitle')} onClose={() => setCredentials(null)}>
           <p>{t('pages.employees.credentialsHint')}</p>
-          <TextField label={t('fields.username')} value={credentials.username} readOnly />
+          <TextField label={t('fields.email')} value={credentials.email} readOnly />
           <TextField label={t('fields.temporaryPassword')} value={credentials.temporaryPassword} readOnly />
           <div className="form-actions">
             <Button type="button" onClick={() => setCredentials(null)}>{t('common.close')}</Button>

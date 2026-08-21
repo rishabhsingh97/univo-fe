@@ -3,15 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { useBranding } from '../context/BrandingContext';
-import { Button, Card, TextField } from '../components/ui';
+import { AuthShell } from '../components/auth/AuthShell';
+import { SocialSignIn } from '../components/auth/SocialSignIn';
+import { Button, TextField } from '../components/ui';
 
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const { t } = useLocale();
   const { branding, loadBranding } = useBranding();
   const navigate = useNavigate();
   const [tenantCode, setTenantCode] = useState('acme');
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -21,7 +23,7 @@ export function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await login({ tenantCode, username, password });
+      await login({ tenantCode, email, password });
       navigate('/');
     } catch {
       setError(t('login.error'));
@@ -30,40 +32,57 @@ export function LoginPage() {
     }
   };
 
+  const handleGoogleCredential = async (idToken: string, currentTenantCode: string) => {
+    setError(null);
+    setSubmitting(true);
+    try {
+      await loginWithGoogle({ tenantCode: currentTenantCode, idToken });
+      navigate('/');
+    } catch {
+      setError(t('login.googleError'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const brandName = branding?.companyName ?? t('app.name');
 
   return (
-    <div className="login-shell">
-      <Card className="login-card">
-        {branding?.logoUrl && (
-          <img src={branding.logoUrl} alt={brandName} style={{ maxHeight: 40, marginBottom: 16 }} />
-        )}
-        <h1>{brandName !== t('app.name') ? brandName : t('login.title')}</h1>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <TextField
-            label={t('login.tenantCode')}
-            value={tenantCode}
-            onChange={(e) => setTenantCode(e.target.value)}
-            onBlur={() => tenantCode && loadBranding(tenantCode)}
-            required
-          />
-          <TextField label={t('login.username')} value={username} onChange={(e) => setUsername(e.target.value)} required />
-          <TextField
-            label={t('login.password')}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          {error && <div style={{ color: 'var(--color-danger)', fontSize: 13 }}>{error}</div>}
-          <Button type="submit" disabled={submitting}>
-            {submitting ? t('login.signingIn') : t('login.signIn')}
-          </Button>
-        </form>
-        <Link to="/platform/login" style={{ display: 'block', marginTop: 16, fontSize: 12.5, textAlign: 'center' }}>
-          {t('login.platformAdminLink')}
-        </Link>
-      </Card>
-    </div>
+    <AuthShell>
+      {branding?.logoUrl && <img src={branding.logoUrl} alt={brandName} style={{ maxHeight: 40, marginBottom: 16 }} />}
+      <h1>{brandName !== t('app.name') ? brandName : t('login.title')}</h1>
+      <p className="auth-card-subtitle">{t('login.subtitle')}</p>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <TextField
+          label={t('login.tenantCode')}
+          value={tenantCode}
+          onChange={(e) => setTenantCode(e.target.value)}
+          onBlur={() => tenantCode && loadBranding(tenantCode)}
+          required
+        />
+        <TextField label={t('login.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <TextField
+          label={t('login.password')}
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        {error && <div style={{ color: 'var(--color-danger)', fontSize: 13 }}>{error}</div>}
+        <Button type="submit" disabled={submitting}>
+          {submitting ? t('login.signingIn') : t('login.signIn')}
+        </Button>
+      </form>
+
+      <div className="auth-divider">
+        <span>{t('login.orContinueWith')}</span>
+      </div>
+      <SocialSignIn tenantCode={tenantCode} onGoogleCredential={handleGoogleCredential} />
+
+      <div className="auth-links">
+        <Link to="/signup">{t('login.signupLink')}</Link>
+        <Link to="/platform/login">{t('login.platformAdminLink')}</Link>
+      </div>
+    </AuthShell>
   );
 }

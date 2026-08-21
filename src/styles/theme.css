@@ -4,18 +4,7 @@
  * page inventing its own colors.
  */
 :root {
-  /* Light-mode tonal ladder, each step far enough apart to read as a distinct surface at a
-     glance: page canvas (--color-bg) < header/hover band (--color-surface-alt) < border <
-     card/sidebar/table-body white (--color-surface). Kept neutral (near-zero hue tint) rather
-     than the more saturated blue-lavender an earlier pass landed on - a tinted fill on table
-     headers/hover rows read as loud rather than "premium enterprise", where separation is
-     usually carried by a crisp border and confident typography over a heavy color block (see
-     .table th's border-bottom in ui.css). Text tokens pushed toward the ends of the range
-     instead of sitting in a "safe but flat" middle gray. */
-  --color-bg: #e9ebf0;
   --color-surface: #ffffff;
-  --color-surface-alt: #f1f2f5;
-  --color-border: #c3c7d1;
   --color-text: #0a0b0f;
   --color-text-muted: #454955;
   --color-primary: #2f4fdb;
@@ -42,12 +31,20 @@
   --color-primary-soft: color-mix(in srgb, var(--color-primary) 14%, transparent);
   --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
 
-  /* The table header (see .table th in ui.css) is a dark SHADE of the same brand blue rather
-     than an unrelated neutral navy - same hue as the "Add x" button and every other primary
-     surface, just much darker, so it reads as one coordinated color system instead of two
-     competing dark tones. Derived from --color-primary like everything else here, so a tenant's
-     branded color carries all the way into the table header too. */
-  --table-header-bg: color-mix(in srgb, var(--color-primary) 32%, black);
+  /* Every neutral surface tinted from the same brand blue instead of picked as its own
+     independent gray - a page built from N unrelated grays plus one blue never reads as "one
+     color system" no matter how carefully each gray is chosen individually; a page built from
+     one blue at N tints and shades always does. Percentages step up together so each stays
+     clearly separated from its neighbor (bg < surface-alt < border in saturation/darkness,
+     against the flat white --color-surface above). */
+  --color-bg: color-mix(in srgb, var(--color-primary) 6%, white);
+  --color-surface-alt: color-mix(in srgb, var(--color-primary) 16%, white);
+  --color-border: color-mix(in srgb, var(--color-primary) 30%, white);
+
+  /* The table header (see .table th in ui.css) is a dark SHADE of the same brand blue - close
+     enough to --color-primary itself (not diluted with much black) that it reads as "the same
+     blue as the Add button, just deeper" at a glance, not as an unrelated dark navy. */
+  --table-header-bg: color-mix(in srgb, var(--color-primary-hover) 78%, black);
   --table-header-text: color-mix(in srgb, var(--color-primary) 22%, white);
   --table-header-hover-text: #ffffff;
 

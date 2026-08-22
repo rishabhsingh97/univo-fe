@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { authApi } from '../api/auth/authApi';
 import { meApi } from '../api/auth/meApi';
+import { domainApi } from '../api/public/domainApi';
 import { TOKEN_STORAGE_KEY } from '../api/client';
 import type { GoogleLoginRequest, LoginRequest, LoginResponse } from '../types/auth';
 
@@ -90,6 +91,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(SESSION_STORAGE_KEY);
     setSession(null);
   };
+
+  // Guards against a stored session whose tenant doesn't match the tenant this hostname
+  // actually belongs to (e.g. a subdomain got reassigned to a different tenant since this
+  // session was stored) - the backend trusts the JWT's tenant claim regardless of which domain
+  // the request arrives on (see JwtAuthenticationFilter), so nothing else catches this. Only
+  // acts when the hostname resolves to a *specific* tenant; the generic/bare domain (or
+  // localhost) has no such expectation, so a session there is never considered mismatched.
+  // Runs once at mount - the hostname can't change without a full page reload anyway.
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    domainApi.resolveTenantByDomain(window.location.hostname).then((resolved) => {
+      if (!cancelled && resolved && resolved !== session.tenantCode) {
+        logout();
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const updateTimezone = async (timezone: string | null) => {
     await meApi.updateTimezone({ timezone });

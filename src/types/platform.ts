@@ -24,6 +24,7 @@ export interface CreateTenantRequest {
   name: string;
   adminEmail: string;
   adminPassword: string;
+  subdomain: string;
 }
 
 export interface UpdateTenantStatusRequest {

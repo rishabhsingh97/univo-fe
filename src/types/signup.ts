@@ -11,6 +11,7 @@ export interface SignupStep1Request {
 export interface SignupStep2Request {
   companyName: string;
   industry: string;
+  subdomain: string;
 }
 
 /** Only "hrms" is a real, provisioned module today - everything else here is just an interest
@@ -28,5 +29,6 @@ export interface SignupDraftResponse {
   companyName: string | null;
   industry: string | null;
   tenantCode: string | null;
+  subdomain: string | null;
   modulesInterested: string[];
 }

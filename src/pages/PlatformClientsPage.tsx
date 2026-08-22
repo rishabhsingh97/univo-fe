@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from 'react';
+import { isAxiosError } from 'axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { platformTenantApi } from '../api/platform/platformTenantApi';
 import { Badge, Button, Card, Modal, PageHeader, PagedDataTable, PillList, TextField, statusTone } from '../components/ui';
+import { SubdomainInput } from '../components/domain/SubdomainInput';
 import type { ActionMenuItem, DataTableColumn } from '../components/ui';
 import type { CreateTenantRequest, TenantSummaryResponse } from '../types/platform';
 
 function emptyForm(): CreateTenantRequest {
-  return { tenantCode: '', name: '', adminEmail: '', adminPassword: '' };
+  return { tenantCode: '', name: '', adminEmail: '', adminPassword: '', subdomain: '' };
 }
 
 export function PlatformClientsPage() {
@@ -97,11 +99,18 @@ export function PlatformClientsPage() {
               onChange={(e) => setForm({ ...form, tenantCode: e.target.value.toLowerCase() })}
               placeholder="e.g. acme" required />
             <TextField label="Company name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <SubdomainInput
+              label="Subdomain"
+              value={form.subdomain}
+              onChange={(value) => setForm({ ...form, subdomain: value })}
+            />
             <TextField label="Admin email" type="email" value={form.adminEmail} onChange={(e) => setForm({ ...form, adminEmail: e.target.value })} required />
             <TextField label="Admin password" type="password" value={form.adminPassword} onChange={(e) => setForm({ ...form, adminPassword: e.target.value })} required />
             {createMutation.isError && (
               <div style={{ color: 'var(--color-danger)', fontSize: 13, gridColumn: '1 / -1' }}>
-                Could not create client - check the tenant code isn't already taken.
+                {isAxiosError<{ message?: string }>(createMutation.error) && createMutation.error.response?.data?.message
+                  ? createMutation.error.response.data.message
+                  : 'Could not create client - check the tenant code and subdomain aren\'t already taken.'}
               </div>
             )}
             <div className="form-actions">

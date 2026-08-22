@@ -98,15 +98,21 @@ export function SignupStep3Page() {
   const { draftId } = useParams<{ draftId: string }>();
   const { setSessionFromLoginResponse } = useAuth();
   const [tenantCode, setTenantCode] = useState<string | null>(null);
+  const [subdomain, setSubdomain] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // The finalize response's JWT is already scoped to the new tenant, but the frontend session
   // object also needs the tenantCode as a plain field (see AuthContext.Session) - fetching the
   // draft here doubles as the same "resume this step" read a page reload would need anyway.
+  // subdomain is what's actually shown to the visitor below - tenantCode stays an internal,
+  // opaque routing id they never need to see or type themselves.
   useEffect(() => {
     if (!draftId) return;
-    signupApi.getDraft(Number(draftId)).then((draft) => setTenantCode(draft.tenantCode));
+    signupApi.getDraft(Number(draftId)).then((draft) => {
+      setTenantCode(draft.tenantCode);
+      setSubdomain(draft.subdomain);
+    });
   }, [draftId]);
 
   const handleSubmit = async (event: FormEvent) => {
@@ -131,7 +137,7 @@ export function SignupStep3Page() {
     <AuthShell wide>
       <h1>{t('signup.title')}</h1>
       <SignupStepper current={3} />
-      {tenantCode && (
+      {subdomain && (
         <div
           style={{
             display: 'inline-flex',
@@ -145,7 +151,7 @@ export function SignupStep3Page() {
             marginBottom: 10,
           }}
         >
-          {t('signup.workspaceIdLabel')} <strong style={{ fontFamily: 'monospace', fontWeight: 700 }}>{tenantCode}</strong>
+          {t('signup.workspaceIdLabel')} <strong style={{ fontFamily: 'monospace', fontWeight: 700 }}>{subdomain}</strong>
         </div>
       )}
       <p className="auth-card-subtitle" style={{ marginTop: 0 }}>

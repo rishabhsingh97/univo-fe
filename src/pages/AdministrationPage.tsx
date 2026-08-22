@@ -4,10 +4,11 @@ import { useLocale } from '../context/LocaleContext';
 import { Button, PageHeader } from '../components/ui';
 import { AuditLogPage } from './AuditLogPage';
 import { BrandingPage } from './BrandingPage';
+import { DomainsPage } from './DomainsPage';
 import { RolesManagementPage, UsersManagementPage } from './RolesUsersPage';
 import { FieldConfigPage } from './FieldConfigPage';
 
-type Tab = 'auditLog' | 'branding' | 'roles' | 'users' | 'fields';
+type Tab = 'auditLog' | 'branding' | 'domains' | 'roles' | 'users' | 'fields';
 
 /**
  * Administration has no sidebar entries of its own (see AppRoutes.tsx / navConfig.ts) - it's a
@@ -20,6 +21,7 @@ type Tab = 'auditLog' | 'branding' | 'roles' | 'users' | 'fields';
 const TABS: { key: Tab; labelKey: string; anyOf: string[] }[] = [
   { key: 'auditLog', labelKey: 'nav.auditLog', anyOf: ['audit.log.read'] },
   { key: 'branding', labelKey: 'nav.settingsBranding', anyOf: ['admin.branding.manage'] },
+  { key: 'domains', labelKey: 'nav.settingsDomains', anyOf: ['admin.domain.manage'] },
   { key: 'roles', labelKey: 'nav.roles', anyOf: ['admin.role.manage'] },
   { key: 'users', labelKey: 'nav.users', anyOf: ['admin.user.manage'] },
   { key: 'fields', labelKey: 'nav.settingsFields', anyOf: ['admin.fieldconfig.manage'] },
@@ -54,6 +56,7 @@ export function AdministrationPage() {
 
       {activeTab === 'auditLog' && <AuditLogPage />}
       {activeTab === 'branding' && <BrandingPage />}
+      {activeTab === 'domains' && <DomainsPage />}
       {activeTab === 'roles' && <RolesManagementPage />}
       {activeTab === 'users' && <UsersManagementPage />}
       {activeTab === 'fields' && <FieldConfigPage />}

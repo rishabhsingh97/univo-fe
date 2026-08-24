@@ -7,7 +7,7 @@ export { PillList } from './PillList';
 export { Spinner } from './Spinner';
 export { PageHeader } from './PageHeader';
 export { DataTable } from './DataTable';
-export type { DataTableColumn, DataTablePagination, DataTableSort } from './DataTable';
+export type { DataTableColumn, DataTableColumnFilter, DataTablePagination, DataTableSort } from './DataTable';
 export { PagedDataTable } from './PagedDataTable';
 export { Modal } from './Modal';
 export { EmployeeSelect } from './EmployeeSelect';

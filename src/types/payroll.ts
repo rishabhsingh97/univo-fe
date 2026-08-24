@@ -82,6 +82,8 @@ export interface PayslipResponse {
   grossPay: number;
   deductions: number;
   netPay: number;
+  employerPfContribution: number;
+  employerEsiContribution: number;
   generatedAt: string;
   components: PayslipComponentResponse[];
 }

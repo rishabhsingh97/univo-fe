@@ -18,6 +18,7 @@ export interface FullFinalResponse {
   pendingSalary: number;
   leaveEncashment: number;
   otherDues: number;
+  gratuityAmount: number;
   deductions: number;
   netSettlement: number;
   remarks: string | null;

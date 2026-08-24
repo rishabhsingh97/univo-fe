@@ -14,6 +14,7 @@ export function usePagedTable(initialSize = 20) {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(initialSize);
   const [sort, setSort] = useState<DataTableSort | null>(null);
+  const [filters, setFilters] = useState<Record<string, string>>({});
 
   const sortParam = sort ? `${sort.key},${sort.direction}` : undefined;
 
@@ -31,6 +32,18 @@ export function usePagedTable(initialSize = 20) {
     setPage(0);
   };
 
+  const onFilterChange = (paramKey: string, value: string) => {
+    setFilters((current) => {
+      if (!value) {
+        if (!(paramKey in current)) return current;
+        const { [paramKey]: _removed, ...rest } = current;
+        return rest;
+      }
+      return { ...current, [paramKey]: value };
+    });
+    setPage(0);
+  };
+
   const paginationFor = <T,>(data: PageResponse<T> | undefined): DataTablePagination => ({
     page,
     size,
@@ -40,7 +53,9 @@ export function usePagedTable(initialSize = 20) {
     onSizeChange,
     sort,
     onSortChange,
+    filters,
+    onFilterChange,
   });
 
-  return { page, size, sort, sortParam, onPageChange: setPage, onSizeChange, onSortChange, paginationFor };
+  return { page, size, sort, sortParam, filters, onPageChange: setPage, onSizeChange, onSortChange, onFilterChange, paginationFor };
 }

@@ -10,7 +10,7 @@ export interface PagedDataTableProps<T> {
    * mutations should invalidate this same base key; TanStack's prefix matching refetches
    * whatever page/sort is currently showing without the page needing to know either. */
   queryKey: unknown[];
-  fetchPage: (page: number, size: number, sort?: string) => Promise<PageResponse<T>>;
+  fetchPage: (page: number, size: number, sort?: string, filters?: Record<string, string>) => Promise<PageResponse<T>>;
   getRowKey: (row: T) => string | number;
   pageSize?: number;
   isLoading?: boolean;
@@ -45,8 +45,8 @@ export function PagedDataTable<T>({
   const table = usePagedTable(pageSize);
 
   const { data, isLoading } = useQuery({
-    queryKey: [...queryKey, table.page, table.size, table.sortParam],
-    queryFn: () => fetchPage(table.page, table.size, table.sortParam),
+    queryKey: [...queryKey, table.page, table.size, table.sortParam, table.filters],
+    queryFn: () => fetchPage(table.page, table.size, table.sortParam, table.filters),
   });
 
   return (

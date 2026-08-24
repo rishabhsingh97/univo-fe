@@ -3,12 +3,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { taxConfigApi } from '../api/finance/taxConfigApi';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
-import { Button, Modal, PageHeader, PagedDataTable, TextField } from '../components/ui';
+import { Button, Modal, PageHeader, PagedDataTable, SelectField, TextField } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
-import type { TaxConfigRequest, TaxConfigResponse } from '../types/finance';
+import type { TaxConfigRequest, TaxConfigResponse, TaxRegime } from '../types/finance';
+
+const REGIMES: TaxRegime[] = ['NEW', 'OLD'];
 
 function emptyForm(): TaxConfigRequest {
-  return { financialYear: '', flatTaxRatePercent: 0, standardDeduction: 0 };
+  return { financialYear: '', flatTaxRatePercent: 0, standardDeduction: 0, regime: 'NEW', rebateThreshold87A: 1200000 };
 }
 
 export function TaxConfigPage() {
@@ -36,6 +38,8 @@ export function TaxConfigPage() {
     { key: 'financialYear', header: t('fields.financialYear'), render: (c) => c.financialYear, sortKey: 'financialYear' },
     { key: 'rate', header: t('fields.flatTaxRatePercent'), render: (c) => `${c.flatTaxRatePercent}%` },
     { key: 'deduction', header: t('fields.standardDeduction'), render: (c) => c.standardDeduction.toLocaleString('en-IN') },
+    { key: 'regime', header: t('fields.regime'), render: (c) => c.regime },
+    { key: 'rebate', header: t('fields.rebateThreshold87A'), render: (c) => c.rebateThreshold87A.toLocaleString('en-IN') },
   ];
 
   const configFields = (value: TaxConfigRequest, onChange: (next: TaxConfigRequest) => void) => (
@@ -60,6 +64,19 @@ export function TaxConfigPage() {
         type="number"
         value={value.standardDeduction ?? 0}
         onChange={(e) => onChange({ ...value, standardDeduction: Number(e.target.value) })}
+      />
+      <SelectField
+        label={t('fields.regime')}
+        value={value.regime ?? 'NEW'}
+        onChange={(e) => onChange({ ...value, regime: e.target.value as TaxRegime })}
+      >
+        {REGIMES.map((r) => <option key={r} value={r}>{r}</option>)}
+      </SelectField>
+      <TextField
+        label={t('fields.rebateThreshold87A')}
+        type="number"
+        value={value.rebateThreshold87A ?? 0}
+        onChange={(e) => onChange({ ...value, rebateThreshold87A: Number(e.target.value) })}
       />
     </>
   );
@@ -105,6 +122,8 @@ export function TaxConfigPage() {
                   financialYear: editing.financialYear,
                   flatTaxRatePercent: editing.flatTaxRatePercent,
                   standardDeduction: editing.standardDeduction,
+                  regime: editing.regime,
+                  rebateThreshold87A: editing.rebateThreshold87A,
                 },
               });
             }}

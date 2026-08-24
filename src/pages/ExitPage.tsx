@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { exitApi } from '../api/hr/exitApi';
 import { useLocale } from '../context/LocaleContext';
+import { useAuth } from '../context/AuthContext';
 import { useTimezone } from '../hooks/useTimezone';
 import { Badge, Button, EmployeeSelect, Modal, PageHeader, PagedDataTable, SelectField, TextField, statusTone } from '../components/ui';
 import type { ActionMenuItem, DataTableColumn } from '../components/ui';
@@ -16,15 +17,14 @@ function emptyForm(): ExitRequest {
 
 export function ExitPage() {
   const { t } = useLocale();
+  const { hasPermission } = useAuth();
   const { formatDate } = useTimezone();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<ExitRequest>(emptyForm());
   const [showCreate, setShowCreate] = useState(false);
   const [viewing, setViewing] = useState<ExitResponse | null>(null);
 
-  // No real permission to gate on yet - Exit has no backend (see api/hr/exitApi.ts), so this
-  // page follows the same "visible to any signed-in user" call already made for its nav entry.
-  const canManage = true;
+  const canManage = hasPermission('exit.write');
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['exits'] });
 

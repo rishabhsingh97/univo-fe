@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { appraisalApi, goalApi } from '../api/hr/performanceApi';
 import { useLocale } from '../context/LocaleContext';
+import { useAuth } from '../context/AuthContext';
 import { useTimezone } from '../hooks/useTimezone';
 import { Badge, Button, Card, EmployeeSelect, Modal, PageHeader, PagedDataTable, SelectField, TextField, statusTone } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
@@ -20,10 +21,10 @@ function emptyAppraisal(): AppraisalRequest {
 
 export function PerformancePage() {
   const { t } = useLocale();
+  const { hasPermission } = useAuth();
   const { formatDate } = useTimezone();
   const queryClient = useQueryClient();
-  // No real permission to gate on yet - Performance has no backend (see api/hr/performanceApi.ts).
-  const canManage = true;
+  const canManage = hasPermission('performance.write');
 
   const [goalForm, setGoalForm] = useState<GoalRequest>(emptyGoal());
   const [showGoalCreate, setShowGoalCreate] = useState(false);

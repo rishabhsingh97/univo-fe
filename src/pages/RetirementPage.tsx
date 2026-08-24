@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { retirementApi } from '../api/hr/retirementApi';
 import { useLocale } from '../context/LocaleContext';
+import { useAuth } from '../context/AuthContext';
 import { useTimezone } from '../hooks/useTimezone';
 import { Badge, Button, EmployeeSelect, Modal, PageHeader, PagedDataTable, TextField, statusTone } from '../components/ui';
 import type { ActionMenuItem, DataTableColumn } from '../components/ui';
@@ -13,13 +14,13 @@ function emptyForm(): RetirementRequest {
 
 export function RetirementPage() {
   const { t } = useLocale();
+  const { hasPermission } = useAuth();
   const { formatDate } = useTimezone();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<RetirementRequest>(emptyForm());
   const [showCreate, setShowCreate] = useState(false);
 
-  // No real permission to gate on yet - Retirement has no backend (see api/hr/retirementApi.ts).
-  const canManage = true;
+  const canManage = hasPermission('retirement.write');
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['retirements'] });
 

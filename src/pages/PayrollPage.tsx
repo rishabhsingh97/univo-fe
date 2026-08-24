@@ -66,6 +66,8 @@ export function PayrollPage() {
     { key: 'grossPay', header: t('fields.amount'), render: (p) => p.grossPay },
     { key: 'deductions', header: t('pages.payroll.deductions'), render: (p) => p.deductions },
     { key: 'netPay', header: t('pages.payroll.netPay'), render: (p) => p.netPay },
+    { key: 'employerPf', header: t('fields.employerPfContribution'), render: (p) => p.employerPfContribution },
+    { key: 'employerEsi', header: t('fields.employerEsiContribution'), render: (p) => p.employerEsiContribution },
   ];
 
   return (

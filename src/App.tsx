@@ -1,4 +1,5 @@
 import { BrowserRouter } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from './context/ThemeContext';
 import { LocaleProvider } from './context/LocaleContext';
@@ -21,6 +22,7 @@ export default function App() {
               <PlatformAuthProvider>
                 <BrandingProvider>
                   <AppRoutes />
+                  <Analytics />
                 </BrandingProvider>
               </PlatformAuthProvider>
             </AuthProvider>

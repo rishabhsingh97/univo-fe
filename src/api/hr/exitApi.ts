@@ -1,4 +1,4 @@
-import { delay, nextMockId, paginate, resolveEmployeeName } from '../mock/mockUtils';
+import { apiClient } from '../client';
 import type { PageResponse } from '../../types/common';
 import type {
   ClearanceItemUpdateRequest,
@@ -7,127 +7,21 @@ import type {
   ExitStatusUpdateRequest,
 } from '../../types/exit';
 
-/**
- * MOCK - the Exit stage has no backend yet (see the HR Lifecycle Ledger). Every function here
- * matches the signature its real axios-backed counterpart will have once
- * `com.rishierp.erp.module.hr.controller.ExitController` exists, so switching this file's
- * bodies for real `apiClient` calls is the only change needed - no page touches this shape.
- */
-
-function defaultClearanceItems(): ExitResponse['clearanceItems'] {
-  return [
-    { id: nextMockId(), label: 'IT assets returned (laptop, ID card, access card)', cleared: false, remarks: null },
-    { id: nextMockId(), label: 'System & email access revoked', cleared: false, remarks: null },
-    { id: nextMockId(), label: 'Knowledge transfer completed', cleared: false, remarks: null },
-    { id: nextMockId(), label: 'Dues cleared with Finance', cleared: false, remarks: null },
-    { id: nextMockId(), label: 'Exit interview conducted', cleared: false, remarks: null },
-  ];
-}
-
-let exits: ExitResponse[] = [
-  {
-    id: 1,
-    employeeId: 1042,
-    employeeName: 'Ananya Rao',
-    exitType: 'RESIGNATION',
-    resignationDate: '2026-07-20',
-    lastWorkingDate: '2026-08-19',
-    noticePeriodDays: 30,
-    reason: 'Relocating to another city',
-    status: 'APPROVED',
-    clearanceItems: [
-      { id: nextMockId(), label: 'IT assets returned (laptop, ID card, access card)', cleared: true, remarks: null },
-      { id: nextMockId(), label: 'System & email access revoked', cleared: true, remarks: null },
-      { id: nextMockId(), label: 'Knowledge transfer completed', cleared: false, remarks: 'In progress with team lead' },
-      { id: nextMockId(), label: 'Dues cleared with Finance', cleared: false, remarks: null },
-      { id: nextMockId(), label: 'Exit interview conducted', cleared: false, remarks: null },
-    ],
-  },
-  {
-    id: 2,
-    employeeId: 1017,
-    employeeName: 'Vikram Shah',
-    exitType: 'RESIGNATION',
-    resignationDate: '2026-08-10',
-    lastWorkingDate: '2026-09-09',
-    noticePeriodDays: 30,
-    reason: 'Higher studies',
-    status: 'PENDING',
-    clearanceItems: defaultClearanceItems(),
-  },
-  {
-    id: 3,
-    employeeId: 1088,
-    employeeName: 'Priya Nair',
-    exitType: 'RESIGNATION',
-    resignationDate: '2026-06-01',
-    lastWorkingDate: '2026-06-30',
-    noticePeriodDays: 30,
-    reason: 'Better opportunity',
-    status: 'COMPLETED',
-    clearanceItems: [
-      { id: nextMockId(), label: 'IT assets returned (laptop, ID card, access card)', cleared: true, remarks: null },
-      { id: nextMockId(), label: 'System & email access revoked', cleared: true, remarks: null },
-      { id: nextMockId(), label: 'Knowledge transfer completed', cleared: true, remarks: null },
-      { id: nextMockId(), label: 'Dues cleared with Finance', cleared: true, remarks: null },
-      { id: nextMockId(), label: 'Exit interview conducted', cleared: true, remarks: null },
-    ],
-  },
-];
+const BASE = '/api/v1/hr/exits';
 
 export const exitApi = {
-  list: (page = 0, size = 20, sort?: string): Promise<PageResponse<ExitResponse>> => delay(paginate(exits, page, size, sort)),
+  list: (page = 0, size = 20, sort?: string) =>
+    apiClient.get<PageResponse<ExitResponse>>(BASE, { params: { page, size, sort } }).then((res) => res.data),
 
-  getById: (id: number): Promise<ExitResponse> => {
-    const found = exits.find((e) => e.id === id);
-    if (!found) return Promise.reject(new Error(`Exit not found: ${id}`));
-    return delay(found);
-  },
+  getById: (id: number) => apiClient.get<ExitResponse>(`${BASE}/${id}`).then((res) => res.data),
 
-  create: async (request: ExitRequest): Promise<ExitResponse> => {
-    const created: ExitResponse = {
-      id: nextMockId(),
-      employeeId: request.employeeId,
-      employeeName: await resolveEmployeeName(request.employeeId),
-      exitType: request.exitType,
-      resignationDate: request.resignationDate,
-      lastWorkingDate: request.lastWorkingDate,
-      noticePeriodDays: request.noticePeriodDays,
-      reason: request.reason ?? null,
-      status: 'PENDING',
-      clearanceItems: defaultClearanceItems(),
-    };
-    exits = [created, ...exits];
-    return delay(created);
-  },
+  create: (request: ExitRequest) => apiClient.post<ExitResponse>(BASE, request).then((res) => res.data),
 
-  updateStatus: (id: number, request: ExitStatusUpdateRequest): Promise<ExitResponse> => {
-    exits = exits.map((e) => (e.id === id ? { ...e, status: request.status } : e));
-    return delay(exits.find((e) => e.id === id)!);
-  },
+  updateStatus: (id: number, request: ExitStatusUpdateRequest) =>
+    apiClient.put<ExitResponse>(`${BASE}/${id}/status`, request).then((res) => res.data),
 
-  updateClearanceItem: (exitId: number, itemId: number, request: ClearanceItemUpdateRequest): Promise<ExitResponse> => {
-    exits = exits.map((e) =>
-      e.id === exitId
-        ? {
-            ...e,
-            clearanceItems: e.clearanceItems.map((item) =>
-              item.id === itemId ? { ...item, cleared: request.cleared, remarks: request.remarks ?? item.remarks } : item,
-            ),
-          }
-        : e,
-    );
-    return delay(exits.find((e) => e.id === exitId)!);
-  },
+  updateClearanceItem: (exitId: number, itemId: number, request: ClearanceItemUpdateRequest) =>
+    apiClient.put<ExitResponse>(`${BASE}/${exitId}/clearance-items/${itemId}`, request).then((res) => res.data),
 
-  /** All clearance items must be cleared - mirrors the rule the real service will enforce. */
-  complete: (id: number): Promise<ExitResponse> => {
-    const exit = exits.find((e) => e.id === id);
-    if (!exit) return Promise.reject(new Error(`Exit not found: ${id}`));
-    if (exit.clearanceItems.some((item) => !item.cleared)) {
-      return Promise.reject(new Error('All clearance items must be cleared before completing this exit.'));
-    }
-    exits = exits.map((e) => (e.id === id ? { ...e, status: 'COMPLETED' } : e));
-    return delay(exits.find((e) => e.id === id)!);
-  },
+  complete: (id: number) => apiClient.post<ExitResponse>(`${BASE}/${id}/complete`).then((res) => res.data),
 };

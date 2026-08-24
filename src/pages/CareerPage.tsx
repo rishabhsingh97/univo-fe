@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { careerApi } from '../api/hr/careerApi';
 import { useLocale } from '../context/LocaleContext';
+import { useAuth } from '../context/AuthContext';
 import { useTimezone } from '../hooks/useTimezone';
 import { Badge, Button, EmployeeSelect, Modal, PageHeader, PagedDataTable, SelectField, TextField, statusTone } from '../components/ui';
 import type { ActionMenuItem, DataTableColumn } from '../components/ui';
@@ -21,13 +22,13 @@ function emptyForm(): CareerActionRequest {
 
 export function CareerPage() {
   const { t } = useLocale();
+  const { hasPermission } = useAuth();
   const { formatDate } = useTimezone();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<CareerActionRequest>(emptyForm());
   const [showCreate, setShowCreate] = useState(false);
 
-  // No real permission to gate on yet - Career has no backend (see api/hr/careerApi.ts).
-  const canManage = true;
+  const canManage = hasPermission('career.write');
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['career-actions'] });
 

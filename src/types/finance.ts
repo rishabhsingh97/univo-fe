@@ -40,10 +40,14 @@ export interface RequestStatusUpdateRequest {
   status: RequestStatus;
 }
 
+export type TaxRegime = 'OLD' | 'NEW';
+
 export interface TaxConfigRequest {
   financialYear: string;
   flatTaxRatePercent: number;
   standardDeduction?: number;
+  regime?: TaxRegime;
+  rebateThreshold87A?: number;
 }
 
 export interface TaxConfigResponse {
@@ -51,4 +55,48 @@ export interface TaxConfigResponse {
   financialYear: string;
   flatTaxRatePercent: number;
   standardDeduction: number;
+  regime: TaxRegime;
+  rebateThreshold87A: number;
+}
+
+export interface StatutoryConfigRequest {
+  pfEnabled: boolean;
+  pfEmployeeRatePercent: number;
+  pfEmployerRatePercent: number;
+  pfWageCeiling: number;
+  esiEnabled: boolean;
+  esiEmployeeRatePercent: number;
+  esiEmployerRatePercent: number;
+  esiWageThreshold: number;
+  ptEnabled: boolean;
+  ptState?: string | null;
+  gratuityEnabled: boolean;
+  gratuityDaysPerYear: number;
+}
+
+export interface StatutoryConfigResponse extends StatutoryConfigRequest {
+  id: number;
+}
+
+export interface ProfessionalTaxSlabRequest {
+  state: string;
+  minGrossMonthly: number;
+  maxGrossMonthly?: number | null;
+  monthlyAmount: number;
+}
+
+export interface ProfessionalTaxSlabResponse extends ProfessionalTaxSlabRequest {
+  id: number;
+}
+
+export interface IncomeTaxSlabRequest {
+  financialYear: string;
+  regime: TaxRegime;
+  minAnnualIncome: number;
+  maxAnnualIncome?: number | null;
+  ratePercent: number;
+}
+
+export interface IncomeTaxSlabResponse extends IncomeTaxSlabRequest {
+  id: number;
 }

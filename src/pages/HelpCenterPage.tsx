@@ -46,12 +46,13 @@ const ARTICLES: Article[] = [
   },
   {
     title: 'Finance',
-    description: 'Track employee loans and advances, reimbursements, and per-financial-year tax configuration.',
+    description:
+      'Track employee loans and advances, reimbursements, per-financial-year tax configuration, and Statutory Configuration - PF, ESI, professional tax, and gratuity rules, plus the income tax and professional tax slab tables payroll uses to compute real deductions.',
   },
   {
-    title: 'Career, Exit & Retirement (preview)',
+    title: 'Performance, Career, Exit, Full & Final, and Retirement',
     description:
-      'Performance, Career Actions, Exit, Full & Final, and Retirement are built as working UI over mock, in-session data - there is no backend behind them yet, so nothing entered there is saved beyond this browser session. They will switch to real, persisted data once their backends are built.',
+      'Performance, Career Actions, Exit, Full & Final, and Retirement are all backed by real, persisted data with their own permissions. Full & Final settlements automatically compute gratuity from the employee\'s salary structure and years of service once they have 5+ years in.',
   },
   {
     title: 'Access management',
@@ -74,6 +75,16 @@ interface ReleaseNoteGroup {
 }
 
 const RELEASE_NOTES: ReleaseNoteGroup[] = [
+  {
+    date: '20 August 2026',
+    notes: [
+      'Employee Documents now store in Cloudflare object storage (one private bucket per tenant, created automatically) instead of local disk, fixing a bug where different tenants could collide on the same storage path - no change to how you upload/download/delete documents in the UI.',
+      'Payroll now computes real statutory deductions - PF, ESI, professional tax, and TDS - instead of a flat 10% placeholder, driven by new Statutory Configuration and income/professional tax slab tables under Finance.',
+      'Full & Final settlements now automatically compute and include gratuity, based on the employee\'s salary structure and years of service (5+ years required).',
+      'Payslips now also show employer-side PF/ESI contributions alongside the employee deductions.',
+      'Performance, Career Actions, Exit, Full & Final, and Retirement are confirmed running on real, persisted backends with seeded permissions - no longer mock/preview data.',
+    ],
+  },
   {
     date: '17 August 2026',
     notes: [
@@ -106,8 +117,9 @@ const RELEASE_NOTES: ReleaseNoteGroup[] = [
 
 const ROADMAP: Article[] = [
   {
-    title: 'Statutory payroll',
-    description: "PF, ESI, professional tax, and TDS slabs as part of the HR payroll flow. Tax Configuration exists under Finance, but nothing computes a real PF/ESI/PT contribution from it yet.",
+    title: 'Statutory payroll accuracy',
+    description:
+      'PF/ESI/PT/TDS/gratuity are now computed for real, but with first-pass simplifications: PF employer contribution uses one blended rate instead of the real EPS/EPF split, ESI has no contribution-period memory, TDS is a per-month annualization with no year-end true-up or old-regime investment declarations, and gratuity does not implement the >6-month service rounding or the Rs.20L exemption cap.',
   },
   {
     title: 'Onboarding checklist',
@@ -116,10 +128,6 @@ const ROADMAP: Article[] = [
   {
     title: 'Offer-to-employee hand-off',
     description: 'Accepting an Offer in Recruitment does not yet create the corresponding Employee record automatically - HR still creates it by hand today.',
-  },
-  {
-    title: 'Real backends for Performance, Career, Exit, Full & Final, and Retirement',
-    description: 'These pages are live and usable today, but run entirely on mock, in-session data - nothing entered there is saved once you leave. Persisting them to real data needs backend work.',
   },
   {
     title: 'Employee & manager self-service',

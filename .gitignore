@@ -7,3 +7,5 @@ dist-ssr
 npm-debug.log*
 *.log
 .claude/
+
+.vercel

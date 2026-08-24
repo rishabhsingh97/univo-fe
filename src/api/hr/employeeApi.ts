@@ -1,6 +1,7 @@
 import { apiClient } from '../client';
 import type { PageResponse } from '../../types/common';
 import type {
+  EmployeeFilterOptionsResponse,
   EmployeeRequest,
   EmployeeResponse,
   GenerateCredentialsResponse,
@@ -10,8 +11,11 @@ import type {
 const BASE = '/api/v1/hr/employees';
 
 export const employeeApi = {
-  list: (page = 0, size = 20, sort?: string) =>
-    apiClient.get<PageResponse<EmployeeResponse>>(BASE, { params: { page, size, sort } }).then((res) => res.data),
+  list: (page = 0, size = 20, sort?: string, filters?: Record<string, string>) =>
+    apiClient.get<PageResponse<EmployeeResponse>>(BASE, { params: { page, size, sort, ...filters } }).then((res) => res.data),
+
+  getFilterOptions: () =>
+    apiClient.get<EmployeeFilterOptionsResponse>(`${BASE}/filter-options`).then((res) => res.data),
 
   getById: (id: number) => apiClient.get<EmployeeResponse>(`${BASE}/${id}`).then((res) => res.data),
 

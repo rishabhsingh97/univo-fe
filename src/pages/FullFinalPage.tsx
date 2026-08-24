@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { fullFinalApi } from '../api/hr/fullFinalApi';
 import { useLocale } from '../context/LocaleContext';
+import { useAuth } from '../context/AuthContext';
 import { Badge, Button, EmployeeSelect, Modal, PageHeader, PagedDataTable, TextField, statusTone } from '../components/ui';
 import type { ActionMenuItem, DataTableColumn } from '../components/ui';
 import type { FullFinalRequest, FullFinalResponse } from '../types/fullFinal';
@@ -14,12 +15,12 @@ const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
 export function FullFinalPage() {
   const { t } = useLocale();
+  const { hasPermission } = useAuth();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FullFinalRequest>(emptyForm());
   const [showCreate, setShowCreate] = useState(false);
 
-  // No real permission to gate on yet - Full & Final has no backend (see api/hr/fullFinalApi.ts).
-  const canManage = true;
+  const canManage = hasPermission('fullfinal.write');
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['full-final'] });
 
@@ -41,6 +42,7 @@ export function FullFinalPage() {
     { key: 'pendingSalary', header: t('fields.pendingSalary'), render: (r) => inr(r.pendingSalary) },
     { key: 'leaveEncashment', header: t('fields.leaveEncashment'), render: (r) => inr(r.leaveEncashment) },
     { key: 'otherDues', header: t('fields.otherDues'), render: (r) => inr(r.otherDues) },
+    { key: 'gratuityAmount', header: t('fields.gratuityAmount'), render: (r) => inr(r.gratuityAmount) },
     { key: 'deductions', header: t('pages.payroll.deductions'), render: (r) => inr(r.deductions) },
     { key: 'net', header: t('fields.netSettlement'), render: (r) => <b>{inr(r.netSettlement)}</b> },
     { key: 'status', header: t('fields.status'), render: (r) => <Badge tone={statusTone(r.status)}>{r.status}</Badge>, sortKey: 'status' },
@@ -79,7 +81,7 @@ export function FullFinalPage() {
             <TextField label={t('fields.otherDues')} type="number" value={form.otherDues} onChange={(e) => setForm({ ...form, otherDues: Number(e.target.value) })} />
             <TextField label={t('pages.payroll.deductions')} type="number" value={form.deductions} onChange={(e) => setForm({ ...form, deductions: Number(e.target.value) })} />
             <TextField label={t('fields.remarks')} value={form.remarks ?? ''} onChange={(e) => setForm({ ...form, remarks: e.target.value })} />
-            <p><b>{t('fields.netSettlement')}:</b> {inr(netPreview)}</p>
+            <p><b>{t('fields.netSettlement')} ({t('pages.fullFinal.excludingGratuity')}):</b> {inr(netPreview)}</p>
             <div className="form-actions">
               <Button type="submit" disabled={createMutation.isPending || !form.employeeId}>
                 {createMutation.isPending ? t('common.creating') : t('common.create')}

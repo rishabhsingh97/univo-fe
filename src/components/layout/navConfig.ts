@@ -128,20 +128,15 @@ export function buildNavModules(t: T): NavModule[] {
         },
         {
           label: 'Performance',
-          // No `anyOf` yet - this stage has no backend/permissions yet (UI preview with mock
-          // data, see api/hr/performanceApi.ts), so it's visible to any signed-in user for now.
-          // Add `anyOf: ['hr.performance.read']` here once a real permission exists.
-          items: [{ to: '/performance', label: t('nav.performance'), icon: IconCheck }],
+          items: [{ to: '/performance', label: t('nav.performance'), icon: IconCheck, anyOf: ['performance.read'] }],
         },
         {
           label: 'Career & Exit',
-          // Same as above - Career/Exit/Full & Final/Retirement are UI previews over mock data
-          // until their backends exist (see the HR Lifecycle Ledger at /docs on the docs site).
           items: [
-            { to: '/career', label: t('nav.career'), icon: IconOrgUnits },
-            { to: '/exit', label: t('nav.exit'), icon: IconPeople },
-            { to: '/full-final', label: t('nav.fullFinal'), icon: IconFinance },
-            { to: '/retirement', label: t('nav.retirement'), icon: IconClock },
+            { to: '/career', label: t('nav.career'), icon: IconOrgUnits, anyOf: ['career.read'] },
+            { to: '/exit', label: t('nav.exit'), icon: IconPeople, anyOf: ['exit.read'] },
+            { to: '/full-final', label: t('nav.fullFinal'), icon: IconFinance, anyOf: ['fullfinal.read'] },
+            { to: '/retirement', label: t('nav.retirement'), icon: IconClock, anyOf: ['retirement.read'] },
           ],
         },
       ],
@@ -161,6 +156,12 @@ export function buildNavModules(t: T): NavModule[] {
               anyOf: ['finance.loan.read', 'finance.reimbursement.read'],
             },
             { to: '/finance/tax-config', label: t('nav.taxConfig'), icon: IconTax, anyOf: ['finance.taxconfig.read'] },
+            {
+              to: '/finance/statutory-config',
+              label: t('nav.statutoryConfig'),
+              icon: IconTax,
+              anyOf: ['finance.statutoryconfig.read', 'finance.taxslabs.read'],
+            },
           ],
         },
       ],

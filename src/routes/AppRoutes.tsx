@@ -5,6 +5,7 @@ import { PlatformLayout } from '../components/layout/PlatformLayout';
 import { ProtectedRoute } from './ProtectedRoute';
 import { PlatformProtectedRoute } from './PlatformProtectedRoute';
 import { LoginPage } from '../pages/LoginPage';
+import { GoogleAuthBridgePage } from '../pages/GoogleAuthBridgePage';
 import { SignupStep1Page } from '../pages/signup/SignupStep1Page';
 import { SignupStep2Page } from '../pages/signup/SignupStep2Page';
 import { SignupStep3Page } from '../pages/signup/SignupStep3Page';
@@ -53,6 +54,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/google-bridge" element={<GoogleAuthBridgePage />} />
       <Route path="/signup" element={<SignupStep1Page />} />
       <Route path="/signup/:draftId/company" element={<SignupStep2Page />} />
       <Route path="/signup/:draftId/modules" element={<SignupStep3Page />} />

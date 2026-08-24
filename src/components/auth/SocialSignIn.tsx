@@ -33,45 +33,9 @@ function LinkedInIcon() {
   );
 }
 
-declare global {
-  interface Window {
-    // Google Identity Services' own global - no @types package for it, and the surface we use
-    // (initialize/renderButton) is tiny enough that pulling in a full type dependency isn't
-    // worth it for three method calls.
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: { client_id: string; callback: (response: { credential: string }) => void }) => void;
-          renderButton: (parent: HTMLElement, options: Record<string, unknown>) => void;
-        };
-      };
-    };
-  }
-}
-
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
-const GOOGLE_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
-
-let googleScriptPromise: Promise<void> | null = null;
-
-function loadGoogleScript(): Promise<void> {
-  if (googleScriptPromise) return googleScriptPromise;
-  googleScriptPromise = new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[src="${GOOGLE_SCRIPT_SRC}"]`);
-    if (existing) {
-      resolve();
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = GOOGLE_SCRIPT_SRC;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Google Identity Services'));
-    document.head.appendChild(script);
-  });
-  return googleScriptPromise;
-}
+const GOOGLE_AUTH_BRIDGE_URL = import.meta.env.VITE_GOOGLE_AUTH_BRIDGE_URL as string | undefined;
+const MESSAGE_SOURCE = 'univo-google-bridge';
 
 interface SocialSignInProps {
   /** Google sign-in still needs a workspace to log into, same as password sign-in - disabled
@@ -82,48 +46,63 @@ interface SocialSignInProps {
   onGoogleCredential: (idToken: string, tenantCode: string) => void;
 }
 
-/** Google is fully wired (once VITE_GOOGLE_CLIENT_ID is set - see .env). Apple and LinkedIn are
- * shown so people know they're coming, but stay disabled until their own backend flows exist -
- * a button that looks clickable but silently fails is worse than one that's honestly off. */
+/** Never talks to Google directly - Google's OAuth console has no wildcard support for
+ * "Authorized JavaScript origins", so a tenant subdomain calling google.accounts.id.initialize()
+ * itself would need registering with Google by hand, per tenant. Instead this opens
+ * GoogleAuthBridgePage in a popup on the one fixed, permanently-registered bridge origin
+ * (VITE_GOOGLE_AUTH_BRIDGE_URL); the bridge does the actual Google sign-in and relays the
+ * resulting ID token back here via postMessage. Google is fully wired once both
+ * VITE_GOOGLE_CLIENT_ID and VITE_GOOGLE_AUTH_BRIDGE_URL are set. Apple and LinkedIn are shown so
+ * people know they're coming, but stay disabled until their own backend flows exist - a button
+ * that looks clickable but silently fails is worse than one that's honestly off. */
 export function SocialSignIn({ tenantCode, onGoogleCredential }: SocialSignInProps) {
-  const googleButtonRef = useRef<HTMLDivElement>(null);
-  const [googleReady, setGoogleReady] = useState(false);
-  // Google's button is only initialized once (re-initializing on every keystroke would fight
-  // its own rendered DOM), so the initialize() callback below closes over stale props from the
-  // first render - these refs are how it reads the *current* tenantCode/handler at click time.
+  const [opening, setOpening] = useState(false);
+  const [popupBlocked, setPopupBlocked] = useState(false);
+  const pollTimerRef = useRef<number | undefined>(undefined);
+  // The message handler and popup-close poller close over stale props/state from the render
+  // they were set up in - these refs are how they read the *current* values instead.
   const tenantCodeRef = useRef(tenantCode);
   tenantCodeRef.current = tenantCode;
   const onGoogleCredentialRef = useRef(onGoogleCredential);
   onGoogleCredentialRef.current = onGoogleCredential;
 
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) return;
-    let cancelled = false;
-    loadGoogleScript()
-      .then(() => {
-        if (cancelled || !window.google) return;
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: (response) => onGoogleCredentialRef.current(response.credential, tenantCodeRef.current),
-        });
-        if (googleButtonRef.current) {
-          window.google.accounts.id.renderButton(googleButtonRef.current, {
-            type: 'icon',
-            theme: 'outline',
-            size: 'large',
-            shape: 'circle',
-          });
-        }
-        setGoogleReady(true);
-      })
-      .catch(() => setGoogleReady(false));
-    return () => {
-      cancelled = true;
+    if (!GOOGLE_AUTH_BRIDGE_URL) return;
+    const bridgeOrigin = new URL(GOOGLE_AUTH_BRIDGE_URL).origin;
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== bridgeOrigin) return;
+      const data = event.data as { source?: string; idToken?: string } | null;
+      if (!data || data.source !== MESSAGE_SOURCE || typeof data.idToken !== 'string') return;
+      window.clearInterval(pollTimerRef.current);
+      setOpening(false);
+      onGoogleCredentialRef.current(data.idToken, tenantCodeRef.current);
     };
-    // onGoogleCredential is stable for the component's lifetime (defined inline by the caller
-    // isn't ideal, but re-initializing on every render would fight Google's own button DOM).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.clearInterval(pollTimerRef.current);
+    };
   }, []);
+
+  const openGoogleBridge = () => {
+    if (!GOOGLE_AUTH_BRIDGE_URL) return;
+    setPopupBlocked(false);
+    const url = `${GOOGLE_AUTH_BRIDGE_URL}?returnOrigin=${encodeURIComponent(window.location.origin)}`;
+    const popup = window.open(url, 'univo-google-auth', 'width=480,height=600');
+    if (!popup) {
+      setPopupBlocked(true);
+      return;
+    }
+    setOpening(true);
+    // The bridge popup posts a message and closes itself on success; this only needs to notice
+    // when the visitor closes it themselves without completing sign-in, so the button re-enables.
+    pollTimerRef.current = window.setInterval(() => {
+      if (popup.closed) {
+        window.clearInterval(pollTimerRef.current);
+        setOpening(false);
+      }
+    }, 500);
+  };
 
   const tenantMissing = tenantCode.trim().length === 0;
   const iconButtonStyle: CSSProperties = {
@@ -135,39 +114,47 @@ export function SocialSignIn({ tenantCode, onGoogleCredential }: SocialSignInPro
     alignItems: 'center',
     justifyContent: 'center',
   };
+  const googleConfigured = Boolean(GOOGLE_CLIENT_ID && GOOGLE_AUTH_BRIDGE_URL);
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
-      {GOOGLE_CLIENT_ID ? (
-        <span title={tenantMissing ? 'Enter a tenant code first' : 'Continue with Google'}>
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              opacity: tenantMissing || !googleReady ? 0.5 : 1,
-              pointerEvents: tenantMissing ? 'none' : 'auto',
-            }}
-          >
-            <div ref={googleButtonRef} />
-          </div>
-        </span>
-      ) : (
-        <span title="Google sign-in is not configured yet">
-          <Button type="button" variant="secondary" disabled aria-label="Continue with Google" style={iconButtonStyle}>
-            <GoogleIcon />
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+        {googleConfigured ? (
+          <span title={tenantMissing ? 'Enter a tenant code first' : 'Continue with Google'}>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={tenantMissing || opening}
+              onClick={openGoogleBridge}
+              aria-label="Continue with Google"
+              style={iconButtonStyle}
+            >
+              <GoogleIcon />
+            </Button>
+          </span>
+        ) : (
+          <span title="Google sign-in is not configured yet">
+            <Button type="button" variant="secondary" disabled aria-label="Continue with Google" style={iconButtonStyle}>
+              <GoogleIcon />
+            </Button>
+          </span>
+        )}
+        <span title="Continue with Apple · Coming soon">
+          <Button type="button" variant="secondary" disabled aria-label="Continue with Apple" style={iconButtonStyle}>
+            <AppleIcon />
           </Button>
         </span>
+        <span title="Continue with LinkedIn · Coming soon">
+          <Button type="button" variant="secondary" disabled aria-label="Continue with LinkedIn" style={iconButtonStyle}>
+            <LinkedInIcon />
+          </Button>
+        </span>
+      </div>
+      {popupBlocked && (
+        <div style={{ color: 'var(--color-danger)', fontSize: 13 }}>
+          Your browser blocked the sign-in popup. Allow popups for this site and try again.
+        </div>
       )}
-      <span title="Continue with Apple · Coming soon">
-        <Button type="button" variant="secondary" disabled aria-label="Continue with Apple" style={iconButtonStyle}>
-          <AppleIcon />
-        </Button>
-      </span>
-      <span title="Continue with LinkedIn · Coming soon">
-        <Button type="button" variant="secondary" disabled aria-label="Continue with LinkedIn" style={iconButtonStyle}>
-          <LinkedInIcon />
-        </Button>
-      </span>
     </div>
   );
 }

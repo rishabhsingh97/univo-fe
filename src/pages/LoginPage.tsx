@@ -8,30 +8,40 @@ import { AuthShell } from '../components/auth/AuthShell';
 import { SocialSignIn } from '../components/auth/SocialSignIn';
 import { Button, TextField } from '../components/ui';
 
+type WorkspaceStatus = 'resolving' | 'found' | 'not-found';
+
 export function LoginPage() {
   const { login, loginWithGoogle } = useAuth();
   const { t } = useLocale();
   const { branding, loadBranding } = useBranding();
   const navigate = useNavigate();
-  const [tenantCode, setTenantCode] = useState('demo');
-  const [tenantCodeFromHost, setTenantCodeFromHost] = useState(false);
+  // No manual tenant entry: the workspace is always derived from the hostname (subdomain or a
+  // client's custom domain), same as production routing already requires. 'not-found' covers
+  // both an unrecognized host and a failed lookup - either way there's no workspace to sign into.
+  const [workspaceStatus, setWorkspaceStatus] = useState<WorkspaceStatus>('resolving');
+  const [tenantCode, setTenantCode] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // A tenant reached through their own {code}.<base domain> subdomain or a custom domain
-  // already knows which workspace they're in - resolve it from the hostname instead of making
-  // them type it. Resolves to null (silently) on the bare platform domain / localhost, where
-  // the field stays editable exactly as before.
   useEffect(() => {
     let cancelled = false;
-    domainApi.resolveTenantByDomain(window.location.hostname).then((resolved) => {
-      if (cancelled || !resolved) return;
-      setTenantCode(resolved);
-      setTenantCodeFromHost(true);
-      void loadBranding(resolved);
-    });
+    domainApi
+      .resolveTenantByDomain(window.location.hostname)
+      .then((resolved) => {
+        if (cancelled) return;
+        if (!resolved) {
+          setWorkspaceStatus('not-found');
+          return;
+        }
+        setTenantCode(resolved);
+        setWorkspaceStatus('found');
+        void loadBranding(resolved);
+      })
+      .catch(() => {
+        if (!cancelled) setWorkspaceStatus('not-found');
+      });
     return () => {
       cancelled = true;
     };
@@ -67,21 +77,33 @@ export function LoginPage() {
 
   const brandName = branding?.companyName ?? t('app.name');
 
+  if (workspaceStatus === 'resolving') {
+    return (
+      <AuthShell>
+        <p className="auth-card-subtitle">{t('login.resolvingWorkspace')}</p>
+      </AuthShell>
+    );
+  }
+
+  if (workspaceStatus === 'not-found') {
+    return (
+      <AuthShell>
+        <h1>{t('login.workspaceNotFoundTitle')}</h1>
+        <p className="auth-card-subtitle">{t('login.workspaceNotFoundBody')}</p>
+        <div className="auth-links">
+          <Link to="/signup">{t('login.signupLink')}</Link>
+          <Link to="/platform/login">{t('login.platformAdminLink')}</Link>
+        </div>
+      </AuthShell>
+    );
+  }
+
   return (
     <AuthShell>
       {branding?.logoUrl && <img src={branding.logoUrl} alt={brandName} style={{ maxHeight: 40, marginBottom: 16 }} />}
       <h1>{brandName !== t('app.name') ? brandName : t('login.title')}</h1>
       <p className="auth-card-subtitle">{t('login.subtitle')}</p>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {!tenantCodeFromHost && (
-          <TextField
-            label={t('login.tenantCode')}
-            value={tenantCode}
-            onChange={(e) => setTenantCode(e.target.value)}
-            onBlur={() => tenantCode && loadBranding(tenantCode)}
-            required
-          />
-        )}
         <TextField label={t('login.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         <TextField
           label={t('login.password')}

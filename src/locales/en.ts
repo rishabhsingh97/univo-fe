@@ -73,6 +73,11 @@ const en = {
     signupLink: "Don't have a workspace? Create one",
     platformAdminLink: 'Platform admin login',
   },
+  notFound: {
+    title: 'Page not found',
+    body: "The page you're looking for doesn't exist or may have moved.",
+    back: 'Go back',
+  },
   signup: {
     title: 'Create your workspace',
     fullName: 'Your name',

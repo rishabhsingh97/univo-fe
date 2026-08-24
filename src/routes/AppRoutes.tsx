@@ -47,6 +47,7 @@ import { ChangePasswordPage } from '../pages/ChangePasswordPage';
 import { EmployeeDetailPage } from '../pages/EmployeeDetailPage';
 import { AdministrationPage } from '../pages/AdministrationPage';
 import { HelpCenterPage } from '../pages/HelpCenterPage';
+import { NotFoundPage } from '../pages/NotFoundPage';
 
 export function AppRoutes() {
   return (
@@ -110,7 +111,7 @@ export function AppRoutes() {
           </Route>
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

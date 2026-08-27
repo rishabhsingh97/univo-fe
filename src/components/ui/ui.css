@@ -8,12 +8,14 @@
   gap: var(--space-2);
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
-  padding: var(--space-2) var(--space-4);
-  font-weight: 600;
-  font-size: 13.5px;
+  padding: var(--space-2) var(--space-px-12);
+  /* 500 rather than 600 - at 11.5px, 600 on a filled button is visually heavier than the
+     page's own headings. */
+  font-weight: 500;
+  font-size: var(--text-base);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease,
-    transform 0.1s ease, opacity 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease, opacity 0.15s ease;
 }
 
 .btn:disabled {
@@ -23,46 +25,58 @@
 }
 
 .btn-sm {
-  padding: 5px 10px;
-  font-size: 12.5px;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
 }
 
+/* No press/lift movement (see .btn-primary below) - a button that moves makes the table row
+   it sits in feel unstable in a dense admin list. */
 .btn:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: none;
 }
 
 .btn-primary {
-  background: var(--gradient-primary);
+  background: var(--color-primary);
   color: var(--color-primary-contrast);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 .btn-primary:hover:not(:disabled) {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+  background: var(--color-primary-hover);
+  box-shadow: none;
+  transform: none;
 }
 
+/* Secondary picks up the brand tint on hover rather than a neutral fill - this is the
+   most-used button in the app (every table row action) and the tint is what makes the
+   interface read as one hue rather than gray chrome with a blue accent. */
 .btn-secondary {
   background: var(--color-surface);
   color: var(--color-text);
-  border-color: var(--color-border);
-  box-shadow: var(--shadow-xs);
+  border-color: var(--color-border-strong);
+  box-shadow: none;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--color-surface-alt);
-  border-color: var(--color-text-muted);
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
 }
 
+/* Outline, not filled - in the Approvals inbox every pending row shows Approve next to
+   Reject; a solid red Reject read as the row's primary action. */
 .btn-danger {
-  background: var(--color-danger);
-  color: #ffffff;
-  box-shadow: var(--shadow-xs);
+  background: var(--color-surface);
+  color: var(--color-danger);
+  border-color: var(--color-danger-border);
+  box-shadow: none;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: var(--color-danger-hover);
-  box-shadow: var(--shadow-sm);
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  box-shadow: none;
 }
 
 .field {
@@ -72,8 +86,8 @@
 }
 
 .field-label {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--text-base);
+  font-weight: 400;
   color: var(--color-text-muted);
   letter-spacing: 0.01em;
 }
@@ -87,11 +101,11 @@
 .detail-row {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--space-px-3);
 }
 
 .detail-row dt {
-  font-size: 11px;
+  font-size: var(--text-11);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -100,7 +114,7 @@
 
 .detail-row dd {
   margin: 0;
-  font-size: 13.5px;
+  font-size: var(--text-xl);
   font-weight: 500;
   color: var(--color-text);
 }
@@ -108,7 +122,8 @@
 .input, .select {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  padding: 9px var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-base);
   background: var(--color-surface);
   color: var(--color-text);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -128,8 +143,8 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  padding: var(--space-5);
+  box-shadow: var(--shadow-xs);
+  padding: var(--space-4);
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -143,7 +158,10 @@
 
 .table-wrapper {
   overflow: auto;
-  min-height: 200px;
+  /* Reserve room for a header row + 10 data rows at the table's current row height (~29px each
+     with .table td's padding/font-size) so a table with 0-9 rows - or the "no data" empty
+     message - doesn't visually collapse/jump shorter than a fully populated page. */
+  min-height: calc(29px * 11);
 }
 
 .table {
@@ -155,18 +173,16 @@
 
 .table th {
   text-align: left;
-  font-size: 11.5px;
+  font-size: var(--text-sm);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 700;
+  letter-spacing: 0.06em;
+  font-weight: 600;
   color: var(--table-header-text);
-  padding: var(--space-3) var(--space-4);
-  /* Confidently dark in light mode (not another shade of light gray) - a light-on-light fill
-     never reads as high-contrast no matter how far apart the two tones get. See
-     --table-header-bg/-text in theme.css; dark mode reuses --color-surface-alt/-text-muted
-     since a dark app already gives that pairing enough contrast on its own. The primary-color
-     border underneath doubles as a small brand touch under an otherwise neutral header. */
-  border-bottom: 2px solid var(--color-primary);
+  padding: var(--table-cell-padding);
+  /* A light fill with a plain border, not a dark bar - at 6px cell padding a dark navy header
+     dominated the page and fought the primary button for attention; the light header lets the
+     data itself be the darkest thing on screen. */
+  border-bottom: 1px solid var(--color-border);
   background: var(--table-header-bg);
   position: sticky;
   top: 0;
@@ -176,7 +192,7 @@
 .table-sort-button {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-px-5);
   border: none;
   background: none;
   padding: 0;
@@ -197,7 +213,7 @@
 }
 
 .table-sort-arrow {
-  font-size: 9px;
+  font-size: var(--text-9);
   opacity: 0.7;
 }
 
@@ -206,7 +222,7 @@
 .table-header-cell {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 /* Small filter trigger next to a column header - no permanent row, no layout shift on toggle.
@@ -261,35 +277,36 @@
 }
 
 .table th:first-child {
-  padding-left: var(--space-5);
+  padding-left: var(--space-4);
 }
 
 .table th:last-child {
-  padding-right: var(--space-5);
+  padding-right: var(--space-4);
 }
 
 .table td {
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--table-cell-padding);
+  font-size: var(--text-base);
+  border-bottom: 1px solid var(--color-fill-subtle);
 }
 
 .table-cell-stack {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-px-2);
 }
 
 .table-cell-stack-secondary {
-  font-size: 12px;
-  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
 }
 
 .table td:first-child {
-  padding-left: var(--space-5);
+  padding-left: var(--space-4);
 }
 
 .table td:last-child {
-  padding-right: var(--space-5);
+  padding-right: var(--space-4);
 }
 
 .table tr:last-child td {
@@ -300,17 +317,17 @@
   transition: background-color 0.1s ease, box-shadow 0.1s ease;
 }
 
-/* Faint zebra striping - just enough to help the eye track a row across a wide table, not
-   enough to compete with the hover/selected states below. */
+/* Zebra striping off - at 6px cell padding, alternating fills read as banding noise; the hover
+   state below does the row-tracking job instead. */
 .table tbody tr:nth-child(even) {
-  background: color-mix(in srgb, var(--color-surface-alt) 45%, var(--color-surface));
+  background: transparent;
 }
 
 .table tbody tr:hover {
-  background: var(--color-primary-soft);
-  /* A left accent bar on hover (inset, so it never shifts layout) reads as a more deliberate,
-     "designed" interaction than a flat color swap alone. */
-  box-shadow: inset 3px 0 0 var(--color-primary);
+  background: var(--color-fill-subtle);
+  /* No inset accent bar - same reasoning as the flat button: movement/strong accents inside a
+     row make a dense table feel busy. */
+  box-shadow: none;
 }
 
 .table-row-clickable {
@@ -343,7 +360,7 @@
 }
 
 .table tbody tr:hover td.table-cell-sticky-right {
-  background: var(--color-primary-soft);
+  background: var(--color-fill-subtle);
 }
 
 .table-pagination {
@@ -351,9 +368,10 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-base);
   border-top: 1px solid var(--color-border);
-  background: var(--color-surface-alt);
+  background: var(--color-fill-subtle);
 }
 
 .table-pagination-controls {
@@ -365,20 +383,20 @@
 .table-pagination-page {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
+  gap: var(--space-2);
+  font-size: var(--text-lg);
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .table-pagination-input {
   width: 44px;
-  padding: 4px 6px;
+  padding: var(--space-1) var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 12.5px;
+  font-size: var(--text-lg);
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -391,18 +409,18 @@
 .table-pagination-size {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
+  gap: var(--space-2);
+  font-size: var(--text-lg);
   color: var(--color-text-muted);
 }
 
 .table-pagination-size-select {
-  padding: 4px 6px;
+  padding: var(--space-1) var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 12.5px;
+  font-size: var(--text-lg);
   font-variant-numeric: tabular-nums;
 }
 
@@ -411,24 +429,22 @@
   outline-offset: 1px;
 }
 
+/* Rectangular tinted chip, not a pill+dot - at 10px a pill plus a leading dot is three shapes
+   carrying one word; the tinted rectangle reads as a status field in a table, which is what it
+   is. Always keep the text label (never a bare colored dot) for accessibility, since with
+   statuses tinted toward one brand hue, tone alone is doing less visual work than before. */
 .badge {
   display: inline-flex;
   align-items: center;
-  border-radius: var(--radius-full);
-  padding: 3px var(--space-3);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  border-radius: var(--radius-sm);
+  padding: var(--space-px-2) var(--space-px-7);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 .badge::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  margin-right: var(--space-2);
-  flex-shrink: 0;
+  display: none;
 }
 
 .badge-neutral {
@@ -477,46 +493,53 @@
 
 .page-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-5);
 }
 
 .page-header h1 {
-  font-size: 22px;
+  font-size: var(--text-h1);
+  font-weight: 600;
   margin: 0;
 }
 
 .page-header p {
   margin: var(--space-1) 0 0;
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: var(--text-base);
+  max-width: 78ch;
+  text-wrap: pretty;
 }
 
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 12, 20, 0.5);
+  background: oklch(0.255 0.037 262 / 0.45);
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   padding: var(--space-6) var(--space-4);
   z-index: 100;
-  overflow-y: auto;
+  overflow: hidden;
   animation: fade-in 0.15s ease;
 }
 
+/* Panel scrolls internally (flex column, header/footer pinned as siblings of a scrolling
+   .modal-body - see Modal.tsx) instead of the backdrop scrolling - with tall multi-section forms
+   (Add Candidate) the header used to scroll away, leaving no visible close button. 80% of the
+   viewport by default, capped so it doesn't sprawl on an ultra-wide monitor. */
 .modal-panel {
-  width: 100%;
-  /* At least 60% of the viewport, capped so it doesn't sprawl on an ultra-wide monitor - never
-     shrinks below 60vw (min-width wins over width when the two conflict), and 60vw is always
-     narrower than the viewport itself so this can never force horizontal overflow. */
-  min-width: 60vw;
-  max-width: 960px;
-  max-height: calc(100vh - 96px);
-  overflow-y: auto;
+  width: 80vw;
+  max-width: 1000px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   animation: modal-in 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -532,21 +555,49 @@
 }
 
 .modal-header {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-4);
+  margin: 0;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 17px;
+  font-size: var(--text-xl);
+}
+
+.modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-5);
+}
+
+.modal-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-fill-subtle);
+}
+
+/* Muted italic line next to a primary action, for features whose data isn't persisted yet -
+   cheap honesty that stops a mock screen from being mistaken for a working feature. */
+.preview-hint {
+  font-size: var(--text-base);
+  font-style: italic;
+  color: var(--color-text-subtle);
 }
 
 .modal-close {
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: var(--text-20);
   line-height: 1;
   cursor: pointer;
   color: var(--color-text-muted);
@@ -558,13 +609,13 @@
 .action-menu-row {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .action-menu-trigger,
 .action-icon-btn {
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
@@ -603,18 +654,18 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  padding: 6px;
+  padding: var(--space-2);
   /* Deliberately the highest z-index in the app - this popover can open above a sticky table
      header/column or inside a Modal (z-index 100) and must never end up clipped underneath. */
   z-index: 9999;
 }
 
 .action-menu-info {
-  padding: 8px;
-  font-size: 12.5px;
+  padding: var(--space-px-8);
+  font-size: var(--text-lg);
   color: var(--color-text-muted);
   border-bottom: 1px solid var(--color-border);
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
 }
 
 .action-menu-item {
@@ -622,11 +673,11 @@
   align-items: center;
   gap: var(--space-2);
   width: 100%;
-  padding: 8px;
+  padding: var(--space-2) var(--space-px-8);
   border: none;
   background: none;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: var(--text-base);
   color: var(--color-text);
   cursor: pointer;
   text-align: left;
@@ -693,7 +744,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: 13px;
+  font-size: var(--text-13);
   color: var(--color-text);
 }
 
@@ -728,7 +779,7 @@
 .login-card h1 {
   margin-top: 0;
   margin-bottom: var(--space-5);
-  font-size: 23px;
+  font-size: var(--text-23);
 }
 
 /* ---------- Auth shell (split brand/form layout) ----------
@@ -747,7 +798,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 48px 44px;
+  padding: var(--space-px-48) var(--space-px-44);
   overflow: hidden;
   color: #fff;
   background: linear-gradient(155deg, var(--color-primary) 0%, var(--color-primary-hover) 55%, var(--color-primary-active) 100%);
@@ -767,16 +818,16 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   font-weight: 700;
-  font-size: 16px;
+  font-size: var(--text-h2);
   letter-spacing: -0.01em;
 }
 
 .auth-brand-mark-icon {
   width: 26px;
   height: 26px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.95);
   flex-shrink: 0;
 }
@@ -787,15 +838,15 @@
 }
 
 .auth-brand-copy h2 {
-  font-size: clamp(26px, 3vw, 34px);
+  font-size: clamp(var(--text-clamp-hero-min), 3vw, var(--text-clamp-hero-max));
   line-height: 1.15;
   letter-spacing: -0.02em;
-  margin: 0 0 14px;
+  margin: 0 0 var(--space-4);
   color: #fff;
 }
 
 .auth-brand-copy p {
-  font-size: 14.5px;
+  font-size: var(--text-14-5);
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.82);
   margin: 0;
@@ -804,32 +855,32 @@
 .auth-brand-stats {
   position: relative;
   display: flex;
-  gap: 28px;
+  gap: var(--space-px-28);
 }
 
 .auth-brand-stat-num {
-  font-size: 20px;
+  font-size: var(--text-20);
   font-weight: 700;
 }
 
 .auth-brand-stat-label {
-  font-size: 12px;
+  font-size: var(--text-md);
   color: rgba(255, 255, 255, 0.72);
-  margin-top: 2px;
+  margin-top: var(--space-px-2);
 }
 
 .auth-form-panel {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 24px;
+  padding: var(--space-7) var(--space-px-24);
 }
 
 .auth-card {
   position: relative;
   width: 100%;
   max-width: 400px;
-  padding: 8px 4px;
+  padding: var(--space-px-8) var(--space-1);
   animation: modal-in 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -838,14 +889,14 @@
 }
 
 .auth-card h1 {
-  margin: 0 0 6px;
-  font-size: 25px;
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-25);
   letter-spacing: -0.015em;
 }
 
 .auth-card-subtitle {
-  margin: 0 0 26px;
-  font-size: 13.5px;
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-xl);
   color: var(--color-text-muted);
 }
 
@@ -853,26 +904,26 @@
    once deserves a bit more breathing room than a dense admin table. */
 .auth-card .input,
 .auth-card .select {
-  padding: 11px 13px;
-  font-size: 14.5px;
+  padding: var(--space-px-11) var(--space-px-13);
+  font-size: var(--text-14-5);
   border-radius: var(--radius-md);
 }
 
 .auth-card .field-label {
-  font-size: 13px;
+  font-size: var(--text-13);
 }
 
 .auth-card .btn {
-  padding: 12px var(--space-5);
-  font-size: 14.5px;
+  padding: var(--space-px-12) var(--space-5);
+  font-size: var(--text-14-5);
   border-radius: var(--radius-md);
 }
 
 .auth-divider {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 22px 0;
+  gap: var(--space-px-12);
+  margin: var(--space-px-22) 0;
 }
 
 .auth-divider::before,
@@ -884,21 +935,21 @@
 }
 
 .auth-divider span {
-  font-size: 12px;
+  font-size: var(--text-md);
   color: var(--color-text-muted);
   white-space: nowrap;
 }
 
 .auth-links {
-  margin-top: 20px;
+  margin-top: var(--space-5);
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-px-8);
 }
 
 .auth-links a {
-  font-size: 13px;
+  font-size: var(--text-13);
   text-decoration: none;
   color: var(--color-text-muted);
 }
@@ -911,7 +962,7 @@
 .signup-stepper {
   display: flex;
   align-items: flex-start;
-  margin-bottom: 26px;
+  margin-bottom: var(--space-6);
 }
 
 .signup-stepper-step {
@@ -931,7 +982,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: var(--text-md);
   font-weight: 700;
   flex-shrink: 0;
   border: 1.5px solid var(--color-border);
@@ -953,9 +1004,9 @@
 }
 
 .signup-stepper-label {
-  font-size: 11.5px;
+  font-size: var(--text-base);
   font-weight: 600;
-  margin-left: 8px;
+  margin-left: var(--space-px-8);
   white-space: nowrap;
   color: var(--color-text-muted);
 }
@@ -968,7 +1019,7 @@
   flex: 1;
   height: 1.5px;
   background: var(--color-border);
-  margin: 0 10px;
+  margin: 0 var(--space-3);
   min-width: 16px;
 }
 
@@ -1005,6 +1056,159 @@
   }
 
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Multi-section forms (e.g. Add Candidate) ----------
+   A stack of .card sections, each with a heading and its own .form-grid, plus repeatable
+   row groups (education/experience) and a lightweight file-upload control. */
+.form-section + .form-section {
+  margin-top: var(--space-5);
+}
+
+.form-section-title {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-15);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.field-hint {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+}
+
+.address-block {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.address-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.address-block-header h3 {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.address-block-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+.upload-field {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.upload-tabs {
+  display: inline-flex;
+  gap: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-px-3);
+  width: fit-content;
+}
+
+.upload-tab {
+  border: none;
+  background: transparent;
+  border-radius: calc(var(--radius-sm) - var(--space-px-2));
+  padding: var(--space-px-5) var(--space-3);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.upload-tab.is-active {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast, #fff);
+}
+
+.upload-tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.upload-dropzone {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: var(--color-fill-subtle);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.upload-dropzone:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.upload-filename {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+}
+
+.repeatable-row {
+  grid-column: 1 / -1;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-fill-subtle);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.repeatable-row + .repeatable-row {
+  margin-top: var(--space-3);
+}
+
+.repeatable-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.repeatable-row-header span {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.repeatable-row-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+textarea.input {
+  resize: vertical;
+  min-height: 76px;
+  font: inherit;
+}
+
+@media (max-width: 860px) {
+  .address-block-fields,
+  .repeatable-row-grid {
     grid-template-columns: 1fr;
   }
 }

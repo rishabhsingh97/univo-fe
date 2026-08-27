@@ -10,20 +10,22 @@
   border-top: 3px solid var(--accent, var(--color-border));
 }
 
-/* Three-color rotation (blue/green/orange) applied by position - see DashboardPage.tsx, which
-   cycles these across both the KPI cards and the quick links below so the same accent means
-   the same thing in both places without needing a fixed per-metric color mapping. */
+/* Three-shade rotation of the brand color itself (not blue/green/orange) applied by position -
+   see DashboardPage.tsx, which cycles these across both the KPI cards and the quick links below
+   so the same accent means the same thing in both places without needing a fixed per-metric
+   color mapping. Distinguished by lightness only, so the dashboard stays one hue like the rest
+   of the app instead of reading as a semantic status rainbow. */
 .dash-accent-1 {
   --accent: var(--color-primary);
   --accent-soft: var(--color-primary-soft);
 }
 .dash-accent-2 {
-  --accent: var(--color-success);
-  --accent-soft: var(--color-success-bg);
+  --accent: var(--color-primary-hover);
+  --accent-soft: color-mix(in srgb, var(--color-primary-hover) 16%, white);
 }
 .dash-accent-3 {
-  --accent: var(--color-warning);
-  --accent-soft: var(--color-warning-bg);
+  --accent: var(--color-primary-active);
+  --accent-soft: color-mix(in srgb, var(--color-primary-active) 16%, white);
 }
 
 .dash-kpi-icon {
@@ -44,14 +46,14 @@
 }
 
 .dash-kpi-label {
-  font-size: 12px;
+  font-size: var(--text-md);
   font-weight: 600;
   color: var(--color-text-muted);
   margin-bottom: var(--space-2);
 }
 
 .dash-kpi-value {
-  font-size: 26px;
+  font-size: var(--text-26);
   font-weight: 700;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
@@ -60,7 +62,7 @@
 
 .dash-kpi-sub {
   margin-top: var(--space-1);
-  font-size: 12px;
+  font-size: var(--text-md);
   color: var(--color-text-muted);
 }
 
@@ -83,12 +85,12 @@
 
 .dash-panel-head h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--text-15);
 }
 
 .dash-panel-empty {
   padding: var(--space-4);
-  font-size: 13px;
+  font-size: var(--text-13);
   color: var(--color-text-muted);
 }
 
@@ -113,24 +115,24 @@
   color: var(--color-text-muted);
   display: grid;
   place-items: center;
-  font-size: 11.5px;
+  font-size: var(--text-base);
   font-weight: 700;
   flex-shrink: 0;
 }
 
 .dash-req-name {
-  font-size: 13px;
+  font-size: var(--text-13);
   font-weight: 600;
   color: var(--color-text);
 }
 
 .dash-req-type {
-  font-size: 12px;
+  font-size: var(--text-md);
   color: var(--color-text-muted);
 }
 
 .dash-req-dates {
-  font-size: 12px;
+  font-size: var(--text-md);
   color: var(--color-text-muted);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -158,7 +160,7 @@
   border-radius: var(--radius-sm);
   color: var(--color-text);
   text-decoration: none;
-  font-size: 13px;
+  font-size: var(--text-13);
   font-weight: 600;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
@@ -198,13 +200,13 @@
 }
 
 .dash-holiday-name {
-  font-size: 13px;
+  font-size: var(--text-13);
   font-weight: 600;
   color: var(--color-text);
 }
 
 .dash-holiday-date {
-  font-size: 12px;
+  font-size: var(--text-md);
   color: var(--color-text-muted);
 }
 

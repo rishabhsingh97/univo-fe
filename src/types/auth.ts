@@ -9,10 +9,9 @@ export interface GoogleLoginRequest {
   idToken: string;
 }
 
+/** No token fields - the access/refresh tokens travel as httpOnly cookies the backend sets
+ * directly on the response (see AuthCookieService), never in this JSON body. */
 export interface LoginResponse {
-  accessToken: string;
-  tokenType: string;
-  expiresInSeconds: number;
   email: string;
   roles: string[];
   /** Display names for `roles`, same order - render these, not `roles` itself. */

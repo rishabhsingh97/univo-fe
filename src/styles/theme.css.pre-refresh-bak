@@ -1,0 +1,166 @@
+/*
+ * Design tokens. Every color/spacing value the app uses should come from here, not be
+ * hardcoded in a component - that's what keeps the app "following the theme" instead of each
+ * page inventing its own colors.
+ */
+:root {
+  --color-surface: #ffffff;
+  --color-text: #0a0b0f;
+  --color-text-muted: #454955;
+  --color-primary: #2f4fdb;
+  --color-primary-hover: #2540b0;
+  --color-primary-contrast: #ffffff;
+  --color-danger: #cc2318;
+  --color-danger-hover: #a81c13;
+  --color-danger-bg: #fbe7e6;
+  --color-success: #0b7d52;
+  --color-success-bg: #dcf3e9;
+  /* Brightened from a muted brown (#9c4907) to an actual vivid orange - it's now also reused
+     as a dashboard accent color (see dashboard.css), not just rare inline warning text, so it
+     needed real punch rather than reading as "dull". */
+  --color-warning: #c2560a;
+  --color-warning-bg: #fbead0;
+
+  /*
+   * Derived, not hardcoded: --color-primary/-hover are the two knobs tenant branding
+   * (BrandingContext.applyBranding) overrides via inline CSS vars on <html>. Everything below
+   * is computed from those two with color-mix() so a tenant's brand color propagates into
+   * every gradient/tint/state automatically instead of only recoloring flat surfaces.
+   */
+  --color-primary-active: color-mix(in srgb, var(--color-primary-hover) 85%, black);
+  --color-primary-soft: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+
+  /* Every neutral surface tinted from the same brand blue instead of picked as its own
+     independent gray - a page built from N unrelated grays plus one blue never reads as "one
+     color system" no matter how carefully each gray is chosen individually; a page built from
+     one blue at N tints and shades always does. Percentages step up together so each stays
+     clearly separated from its neighbor (bg < surface-alt < border in saturation/darkness,
+     against the flat white --color-surface above). */
+  --color-bg: color-mix(in srgb, var(--color-primary) 6%, white);
+  --color-surface-alt: color-mix(in srgb, var(--color-primary) 16%, white);
+  --color-border: color-mix(in srgb, var(--color-primary) 30%, white);
+
+  /* The table header (see .table th in ui.css) is a dark SHADE of the same brand blue - close
+     enough to --color-primary itself that it reads as "the same blue as the Add button, just
+     deeper" rather than an unrelated dark navy, but dark enough that its light uppercase text
+     stays comfortably high-contrast (a lighter attempt at this traded away too much of that). */
+  --table-header-bg: color-mix(in srgb, var(--color-primary-hover) 60%, black);
+  --table-header-text: color-mix(in srgb, var(--color-primary) 22%, white);
+  --table-header-hover-text: #ffffff;
+
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 10px;
+  --space-4: 14px;
+  --space-5: 20px;
+  --space-6: 28px;
+  --space-7: 40px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-full: 999px;
+
+  --shadow-xs: 0 1px 2px rgba(21, 26, 48, 0.05);
+  --shadow-sm: 0 2px 6px rgba(21, 26, 48, 0.06), 0 1px 2px rgba(21, 26, 48, 0.05);
+  --shadow-md: 0 8px 24px rgba(21, 26, 48, 0.10), 0 2px 6px rgba(21, 26, 48, 0.06);
+  --shadow-lg: 0 20px 48px rgba(21, 26, 48, 0.16), 0 4px 12px rgba(21, 26, 48, 0.08);
+  --shadow-focus: 0 0 0 3px var(--color-primary-soft);
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+[data-theme="dark"] {
+  --color-bg: #0f1116;
+  --color-surface: #171a22;
+  --color-surface-alt: #1e222c;
+  --color-border: #2b3040;
+  --color-text: #e9ebf3;
+  --color-text-muted: #97a0b5;
+  --color-primary: #6d8cff;
+  --color-primary-hover: #8aa3ff;
+  --color-primary-contrast: #0b0d12;
+  --color-danger: #ff6b64;
+  --color-danger-hover: #ff8781;
+  --color-danger-bg: rgba(255, 107, 100, 0.12);
+  --color-success: #3fd694;
+  --color-success-bg: rgba(63, 214, 148, 0.12);
+  --color-warning: #f7a63f;
+  --color-warning-bg: rgba(247, 166, 63, 0.12);
+
+  /* --color-primary-active/-soft/--gradient-primary/--table-header-* are intentionally NOT
+     redeclared here - they stay defined once in :root as color-mix() formulas over
+     --color-primary/-hover, so they automatically pick up whichever theme (or tenant branding
+     override) is active. */
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-focus: 0 0 0 3px var(--color-primary-soft);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1, h2, h3, h4 {
+  letter-spacing: -0.015em;
+  font-weight: 700;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}

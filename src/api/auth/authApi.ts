@@ -6,4 +6,6 @@ export const authApi = {
     apiClient.post<LoginResponse>('/api/auth/login', request).then((res) => res.data),
   loginWithGoogle: (request: GoogleLoginRequest) =>
     apiClient.post<LoginResponse>('/api/auth/google', request).then((res) => res.data),
+  refresh: () => apiClient.post<LoginResponse>('/api/auth/refresh').then((res) => res.data),
+  logout: () => apiClient.post<void>('/api/auth/logout').then(() => undefined),
 };

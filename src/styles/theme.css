@@ -1,98 +1,204 @@
 /*
- * Design tokens. Every color/spacing value the app uses should come from here, not be
- * hardcoded in a component - that's what keeps the app "following the theme" instead of each
- * page inventing its own colors.
+ * Design tokens — drop-in replacement for src/styles/theme.css.
+ *
+ * Same architecture as before: --color-primary / --color-primary-hover are the two knobs
+ * tenant branding overrides, and every neutral is color-mix()'d off them so a tenant's brand
+ * color propagates through the whole interface. Two more client knobs, --space-scale and
+ * --font-scale, work the same way for size instead of color: every --space-*, --space-px-*,
+ * --radius-* and --text-* token is `<base px> multiplied by var(--space-scale or --font-scale)`,
+ * so a tenant's theme can rescale the whole app's density/type size from one number each, via the same
+ * BrandingContext -> root.style.setProperty() path (backed by the backend's themeVars map)
+ * already used for the color knobs. What changed from the previous version:
+ *
+ *   1. Primary is a graphite navy in oklch instead of #2f4fdb. oklch keeps lightness
+ *      perceptually flat as the hue moves, so a tenant swapping hue gets the same tonal
+ *      structure rather than a palette that goes muddy at some hues and glaring at others.
+ *   2. Neutral mix percentages dropped (bg 6→5, surface-alt 16→7, border 30→11) — the old
+ *      steps read as a blue-tinted UI; these read as one hue at low saturation.
+ *   3. --color-fill-subtle is new: the near-white fill for table headers, table footers and
+ *      inset panels. --color-surface-alt is now specifically the *hover* tone.
+ *   4. Statuses are pulled toward the brand hue family instead of being three independent
+ *      traffic-light colors: success reads teal-blue, warning brass, danger crimson-magenta.
+ *   5. Type: Geist at a 12px base, with tabular numerals globally so IDs, amounts and timers
+ *      align in columns without a second (monospace) typeface.
+ *   6. Radii tightened (sm 8→6, md 12→8, lg 18→11) for a denser, more tabular feel.
  */
 :root {
   --color-surface: #ffffff;
-  --color-text: #0a0b0f;
-  --color-text-muted: #454955;
-  --color-primary: #2f4fdb;
-  --color-primary-hover: #2540b0;
-  --color-primary-contrast: #ffffff;
-  --color-danger: #cc2318;
-  --color-danger-hover: #a81c13;
-  --color-danger-bg: #fbe7e6;
-  --color-success: #0b7d52;
-  --color-success-bg: #dcf3e9;
-  /* Brightened from a muted brown (#9c4907) to an actual vivid orange - it's now also reused
-     as a dashboard accent color (see dashboard.css), not just rare inline warning text, so it
-     needed real punch rather than reading as "dull". */
-  --color-warning: #c2560a;
-  --color-warning-bg: #fbead0;
+  --color-text: oklch(0.255 0.037 262);
+  --color-text-muted: oklch(0.615 0.024 262);
+  /* One step lighter than -muted, for table header labels and timestamps. */
+  --color-text-subtle: oklch(0.7 0.022 262);
 
-  /*
-   * Derived, not hardcoded: --color-primary/-hover are the two knobs tenant branding
-   * (BrandingContext.applyBranding) overrides via inline CSS vars on <html>. Everything below
-   * is computed from those two with color-mix() so a tenant's brand color propagates into
-   * every gradient/tint/state automatically instead of only recoloring flat surfaces.
-   */
+  --color-primary: oklch(0.52 0.13 262);
+  --color-primary-hover: oklch(0.43 0.13 262);
+  --color-primary-contrast: #ffffff;
+
+  /* Statuses, tinted toward the brand hue. Kept as real hue separation (teal / brass /
+     crimson) so the three states stay distinguishable for colorblind users — the tint is a
+     family resemblance, not a collapse into one hue. */
+  --color-success: oklch(0.48 0.085 190);
+  --color-success-bg: oklch(0.945 0.028 200);
+  --color-warning: oklch(0.53 0.095 84);
+  --color-warning-bg: oklch(0.955 0.038 88);
+  --color-danger: oklch(0.52 0.115 355);
+  --color-danger-hover: oklch(0.43 0.115 355);
+  --color-danger-bg: oklch(0.95 0.035 355);
+  --color-danger-border: oklch(0.88 0.05 355);
+
+  /* Derived from the two branding knobs — never hardcode these per-theme or they stop
+     tracking a tenant's brand color. */
   --color-primary-active: color-mix(in srgb, var(--color-primary-hover) 85%, black);
-  --color-primary-soft: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  --color-primary-soft: color-mix(in srgb, var(--color-primary) 16%, white);
   --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
 
-  /* Every neutral surface tinted from the same brand blue instead of picked as its own
-     independent gray - a page built from N unrelated grays plus one blue never reads as "one
-     color system" no matter how carefully each gray is chosen individually; a page built from
-     one blue at N tints and shades always does. Percentages step up together so each stays
-     clearly separated from its neighbor (bg < surface-alt < border in saturation/darkness,
-     against the flat white --color-surface above). */
-  --color-bg: color-mix(in srgb, var(--color-primary) 6%, white);
-  --color-surface-alt: color-mix(in srgb, var(--color-primary) 16%, white);
-  --color-border: color-mix(in srgb, var(--color-primary) 30%, white);
+  /* Every neutral is the brand hue at a different tint. Steps stay clearly separated:
+     fill-subtle < bg < surface-alt < border < border-strong. */
+  --color-fill-subtle: color-mix(in srgb, var(--color-primary) 3.5%, white);
+  --color-bg: color-mix(in srgb, var(--color-primary) 5%, white);
+  --color-surface-alt: color-mix(in srgb, var(--color-primary) 7%, white);
+  --color-border: color-mix(in srgb, var(--color-primary) 11%, white);
+  --color-border-strong: color-mix(in srgb, var(--color-primary) 20%, white);
 
-  /* The table header (see .table th in ui.css) is a dark SHADE of the same brand blue - close
-     enough to --color-primary itself that it reads as "the same blue as the Add button, just
-     deeper" rather than an unrelated dark navy, but dark enough that its light uppercase text
-     stays comfortably high-contrast (a lighter attempt at this traded away too much of that). */
-  --table-header-bg: color-mix(in srgb, var(--color-primary-hover) 60%, black);
-  --table-header-text: color-mix(in srgb, var(--color-primary) 22%, white);
-  --table-header-hover-text: #ffffff;
+  /* Table headers are now a light fill with muted uppercase labels rather than a dark navy
+     bar. At this density the dark bar dominated the page and fought the primary button for
+     attention; the light header lets the data itself be the darkest thing on screen. */
+  --table-header-bg: color-mix(in srgb, var(--color-primary) 9%, white);
+  --table-header-text: var(--color-text-muted);
+  --table-header-hover-text: var(--color-text);
+  --table-cell-padding: var(--space-2) var(--space-px-12);
 
-  --space-1: 4px;
-  --space-2: 6px;
-  --space-3: 10px;
-  --space-4: 14px;
-  --space-5: 20px;
-  --space-6: 28px;
-  --space-7: 40px;
+  /* Third client knob, alongside --color-primary/-hover above: a tenant's theme can set these
+     (same setProperty()-on-:root mechanism BrandingContext already uses for the two color
+     knobs, via the backend's themeVars map) to make one tenant's whole UI denser/roomier or
+     its type a size up/down, without editing a single px value below. Every --space-*,
+     --space-px-*, --radius-* and --text-* token is `<base px> multiplied by
+     var(--space-scale or --font-scale)`, so retuning the knob rescales the entire app from
+     this one spot. */
+  --space-scale: 1;
+  --font-scale: 1;
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
+  --space-1: calc(4px * var(--space-scale, 1));
+  --space-2: calc(6px * var(--space-scale, 1));
+  --space-3: calc(10px * var(--space-scale, 1));
+  --space-4: calc(14px * var(--space-scale, 1));
+  --space-5: calc(20px * var(--space-scale, 1));
+  --space-6: calc(26px * var(--space-scale, 1));
+  --space-7: calc(40px * var(--space-scale, 1));
+
+  /* Odd-sized paddings/margins/gaps that don't land on a --space-N rhythm step but still
+     shouldn't be a bare literal at the call site - named by their pixel value (not a step
+     index) precisely so they're never confused with --space-1..7 above. */
+  --space-px-1: calc(1px * var(--space-scale, 1));
+  --space-px-2: calc(2px * var(--space-scale, 1));
+  --space-px-3: calc(3px * var(--space-scale, 1));
+  --space-px-5: calc(5px * var(--space-scale, 1));
+  --space-px-7: calc(7px * var(--space-scale, 1));
+  --space-px-8: calc(8px * var(--space-scale, 1));
+  --space-px-9: calc(9px * var(--space-scale, 1));
+  --space-px-11: calc(11px * var(--space-scale, 1));
+  --space-px-12: calc(12px * var(--space-scale, 1));
+  --space-px-13: calc(13px * var(--space-scale, 1));
+  --space-px-16: calc(16px * var(--space-scale, 1));
+  --space-px-22: calc(22px * var(--space-scale, 1));
+  --space-px-24: calc(24px * var(--space-scale, 1));
+  --space-px-28: calc(28px * var(--space-scale, 1));
+  --space-px-30: calc(30px * var(--space-scale, 1));
+  --space-px-34: calc(34px * var(--space-scale, 1));
+  --space-px-44: calc(44px * var(--space-scale, 1));
+  --space-px-46: calc(46px * var(--space-scale, 1));
+  --space-px-48: calc(48px * var(--space-scale, 1));
+
+  /* Structural layout dimension, not a spacing/padding step - still scaled the same way so a
+     tenant's --space-scale knob resizes the whole shell consistently. */
+  --sidebar-width: calc(224px * var(--space-scale, 1));
+
+  --radius-sm: calc(6px * var(--space-scale, 1));
+  --radius-md: calc(8px * var(--space-scale, 1));
+  --radius-lg: calc(11px * var(--space-scale, 1));
+  /* Not scaled - already far larger than any element it's applied to (a pill's actual corner
+     radius is always clamped to half the element's own size), so scaling it would be a no-op. */
   --radius-full: 999px;
+  --radius-7: calc(7px * var(--space-scale, 1));
 
-  --shadow-xs: 0 1px 2px rgba(21, 26, 48, 0.05);
-  --shadow-sm: 0 2px 6px rgba(21, 26, 48, 0.06), 0 1px 2px rgba(21, 26, 48, 0.05);
-  --shadow-md: 0 8px 24px rgba(21, 26, 48, 0.10), 0 2px 6px rgba(21, 26, 48, 0.06);
-  --shadow-lg: 0 20px 48px rgba(21, 26, 48, 0.16), 0 4px 12px rgba(21, 26, 48, 0.08);
+  --shadow-xs: 0 1px 2px oklch(0.255 0.037 262 / 0.05);
+  --shadow-sm: 0 1px 2px oklch(0.255 0.037 262 / 0.05), 0 1px 3px oklch(0.255 0.037 262 / 0.04);
+  --shadow-md: 0 8px 24px oklch(0.255 0.037 262 / 0.1), 0 2px 6px oklch(0.255 0.037 262 / 0.06);
+  --shadow-lg: 0 24px 60px oklch(0.255 0.037 262 / 0.26), 0 4px 12px oklch(0.255 0.037 262 / 0.08);
   --shadow-focus: 0 0 0 3px var(--color-primary-soft);
 
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+
+  /* One type scale, referenced by name so density changes happen in one place. Every
+     font-size across the app should reference one of these instead of a literal px value -
+     when a needed size isn't here yet, add it here rather than hardcoding it at the call site.
+     Each step is `<base px> * var(--font-scale, 1)`, the client knob declared above. */
+  --text-9: calc(10.5px * var(--font-scale, 1));
+  --text-xs: calc(11px * var(--font-scale, 1));
+  --text-sm: calc(11.5px * var(--font-scale, 1));
+  --text-11: calc(12.5px * var(--font-scale, 1));
+  --text-base: calc(13px * var(--font-scale, 1));
+  --text-md: calc(13.5px * var(--font-scale, 1));
+  --text-lg: calc(14px * var(--font-scale, 1));
+  --text-13: calc(14.5px * var(--font-scale, 1));
+  --text-xl: calc(15px * var(--font-scale, 1));
+  --text-14-5: calc(16px * var(--font-scale, 1));
+  --text-h2: calc(17.5px * var(--font-scale, 1));
+  --text-h1: calc(18.5px * var(--font-scale, 1));
+  --text-18: calc(19.5px * var(--font-scale, 1));
+  --text-20: calc(21.5px * var(--font-scale, 1));
+  --text-23: calc(24.5px * var(--font-scale, 1));
+  --text-25: calc(26.5px * var(--font-scale, 1));
+  --text-26: calc(27.5px * var(--font-scale, 1));
+
+  /* These four were already tuned by hand (a separate +1.5px pass on just the sidebar) and
+     don't collide with any of the scale steps above at their pre-bump values, so they stay
+     put here rather than getting bumped a second time by a future scale-wide change. Still
+     driven by the same --font-scale knob as everything else. */
+  --text-14: calc(14px * var(--font-scale, 1));
+  --text-14-3: calc(14.3px * var(--font-scale, 1));
+  --text-14-8: calc(14.8px * var(--font-scale, 1));
+  --text-18-5: calc(18.5px * var(--font-scale, 1));
+
+  /* Sidebar-only sizes whose already-bumped value happens to equal another token's pre-bump
+     value (e.g. --text-base was 11.5px, same as the sidebar's already-tuned tag size) -
+     kept as their own tokens so they don't get swept up in this scale-wide bump too. */
+  --text-sidebar-link: calc(15px * var(--font-scale, 1));
+  --text-sidebar-tag: calc(11.5px * var(--font-scale, 1));
+  --text-sidebar-viewall: calc(13.5px * var(--font-scale, 1));
+
+  /* Bounds for the auth hero heading's clamp() (see .auth-brand-copy h2) - the only fluid,
+     viewport-relative font-size in the app, so it gets its own pair of tokens rather than
+     reusing the fixed scale above. */
+  --text-clamp-hero-min: calc(26px * var(--font-scale, 1));
+  --text-clamp-hero-max: calc(34px * var(--font-scale, 1));
 }
 
 [data-theme="dark"] {
-  --color-bg: #0f1116;
-  --color-surface: #171a22;
-  --color-surface-alt: #1e222c;
-  --color-border: #2b3040;
-  --color-text: #e9ebf3;
-  --color-text-muted: #97a0b5;
-  --color-primary: #6d8cff;
-  --color-primary-hover: #8aa3ff;
-  --color-primary-contrast: #0b0d12;
-  --color-danger: #ff6b64;
-  --color-danger-hover: #ff8781;
-  --color-danger-bg: rgba(255, 107, 100, 0.12);
-  --color-success: #3fd694;
-  --color-success-bg: rgba(63, 214, 148, 0.12);
-  --color-warning: #f7a63f;
-  --color-warning-bg: rgba(247, 166, 63, 0.12);
+  --color-bg: oklch(0.17 0.02 262);
+  --color-fill-subtle: oklch(0.2 0.022 262);
+  --color-surface: oklch(0.225 0.024 262);
+  --color-surface-alt: oklch(0.265 0.026 262);
+  --color-border: oklch(0.32 0.028 262);
+  --color-border-strong: oklch(0.4 0.03 262);
+  --color-text: oklch(0.94 0.012 262);
+  --color-text-muted: oklch(0.7 0.024 262);
+  --color-text-subtle: oklch(0.6 0.022 262);
+  --color-primary: oklch(0.68 0.13 262);
+  --color-primary-hover: oklch(0.76 0.11 262);
+  --color-primary-contrast: oklch(0.18 0.02 262);
+  --color-success: oklch(0.75 0.1 190);
+  --color-success-bg: oklch(0.75 0.1 190 / 0.14);
+  --color-warning: oklch(0.79 0.11 84);
+  --color-warning-bg: oklch(0.79 0.11 84 / 0.14);
+  --color-danger: oklch(0.7 0.13 355);
+  --color-danger-hover: oklch(0.78 0.12 355);
+  --color-danger-bg: oklch(0.7 0.13 355 / 0.14);
+  --color-danger-border: oklch(0.7 0.13 355 / 0.4);
 
-  /* --color-primary-active/-soft/--gradient-primary/--table-header-* are intentionally NOT
-     redeclared here - they stay defined once in :root as color-mix() formulas over
-     --color-primary/-hover, so they automatically pick up whichever theme (or tenant branding
-     override) is active. */
+  /* --color-primary-active/-soft/--gradient-primary/--table-header-* stay defined once in
+     :root as color-mix() formulas over --color-primary/-hover so they follow theme AND
+     tenant branding automatically. Do not redeclare them here. */
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -114,16 +220,20 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: var(--text-md);
+  line-height: 1.45;
+  /* Global tabular numerals: this is what lets the app drop its monospace face and still keep
+     IDs, currency columns and the time tracker's readout aligned. */
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 h1, h2, h3, h4 {
-  letter-spacing: -0.015em;
-  font-weight: 700;
+  letter-spacing: -0.02em;
+  /* 600 rather than 700 — at 12px body, 700 headings read shouty. */
+  font-weight: 600;
 }
 
 button, input, select, textarea {
@@ -133,6 +243,10 @@ button, input, select, textarea {
 
 a {
   color: var(--color-primary);
+}
+
+a:hover {
+  color: var(--color-primary-hover);
 }
 
 :focus-visible {
@@ -156,11 +270,13 @@ a {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: var(--color-border-strong);
   border-radius: var(--radius-full);
-  border: 2px solid var(--color-bg);
+  border: 3px solid transparent;
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background: var(--color-text-subtle);
+  background-clip: content-box;
 }

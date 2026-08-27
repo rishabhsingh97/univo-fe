@@ -14,6 +14,16 @@ import { PlatformClientsPage } from '../pages/PlatformClientsPage';
 import { PlatformModulesPage } from '../pages/PlatformModulesPage';
 import { PlatformStatusPage } from '../pages/PlatformStatusPage';
 import { DashboardPage } from '../pages/DashboardPage';
+import { ApprovalsPage } from '../pages/ApprovalsPage';
+import { FilesPage } from '../pages/FilesPage';
+import { HrLettersPage } from '../pages/HrLettersPage';
+import { TravelPage } from '../pages/TravelPage';
+import { TasksPage } from '../pages/TasksPage';
+import { OnboardingPage } from '../pages/OnboardingPage';
+import { ServicesPage } from '../pages/ServicesPage';
+import { OkrPage } from '../pages/OkrPage';
+import { TimeTrackerPage } from '../pages/TimeTrackerPage';
+import { EngagementPage } from '../pages/EngagementPage';
 import { EmployeesPage } from '../pages/EmployeesPage';
 import { OrgUnitsPage } from '../pages/OrgUnitsPage';
 import { DesignationsPage } from '../pages/DesignationsPage';
@@ -70,6 +80,16 @@ export function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<DashboardPage />} />
+          <Route path="/approvals" element={<ApprovalsPage />} />
+          <Route path="/travel" element={<TravelPage />} />
+          <Route path="/tasks" element={<TasksPage />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/okr" element={<OkrPage />} />
+          <Route path="/time-tracker" element={<TimeTrackerPage />} />
+          <Route path="/engagement" element={<EngagementPage />} />
+          <Route path="/files" element={<FilesPage />} />
+          <Route path="/hr-letters" element={<HrLettersPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
           <Route path="/employees/:id" element={<EmployeeDetailPage />} />
           <Route path="/org-units" element={<OrgUnitsPage />} />

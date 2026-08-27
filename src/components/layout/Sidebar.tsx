@@ -199,8 +199,13 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       {activeModule.groups.map((group) => {
         const isActiveGroup = group.items.some((item) => location.pathname.startsWith(item.to));
         return (
-          <details key={group.label} className="nav-group" open={isActiveGroup || activeModule.groups.length === 1}>
-            <summary>
+          <details
+            key={group.label}
+            name={`nav-group-${activeModule.key}`}
+            className="nav-group"
+            open={isActiveGroup || activeModule.groups.length === 1}
+          >
+            <summary className={isActiveGroup ? 'active' : undefined}>
               <IconChevronRight className="chevron" />
               {group.icon && <group.icon className="group-icon" />}
               {group.label}
@@ -213,7 +218,6 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
                   end={isPrefixOfSibling(item.to)}
                   className={({ isActive }) => `nav-sublink${isActive ? ' active' : ''}`}
                 >
-                  <span className="dot" />
                   {item.label}
                 </NavLink>
               ))}

@@ -11,6 +11,10 @@ import {
   IconFinance,
   IconTax,
   IconCheck,
+  IconDocument,
+  IconFields,
+  IconTravel,
+  IconBell,
 } from './navIcons';
 
 export interface NavLeaf {
@@ -55,6 +59,26 @@ export function buildNavModules(t: T): NavModule[] {
       icon: IconPeople,
       groups: [
         {
+          label: 'Approvals',
+          items: [{ to: '/approvals', label: t('nav.approvals'), icon: IconCheck }],
+        },
+        {
+          label: 'Travel',
+          items: [{ to: '/travel', label: t('nav.travel'), icon: IconTravel }],
+        },
+        {
+          label: 'Tasks',
+          items: [{ to: '/tasks', label: t('nav.tasks'), icon: IconCheck }],
+        },
+        {
+          label: 'Services',
+          items: [{ to: '/services', label: t('nav.services'), icon: IconCheck }],
+        },
+        {
+          label: 'Onboarding',
+          items: [{ to: '/onboarding', label: t('nav.onboarding'), icon: IconCheck }],
+        },
+        {
           label: 'Workforce',
           items: [
             { to: '/employees', label: t('nav.employees'), icon: IconPeople, anyOf: ['hr.employee.read'] },
@@ -77,6 +101,7 @@ export function buildNavModules(t: T): NavModule[] {
               anyOf: ['regularization.read'],
             },
             { to: '/overtime', label: t('nav.overtime'), icon: IconClock, anyOf: ['overtime.read'] },
+            { to: '/time-tracker', label: t('nav.timeTracker'), icon: IconClock },
             { to: '/leave', label: t('nav.leave'), icon: IconLeave, anyOf: ['leave.read'] },
             { to: '/holidays', label: t('nav.holidays'), icon: IconHoliday, anyOf: ['holiday.read'] },
           ],
@@ -127,27 +152,9 @@ export function buildNavModules(t: T): NavModule[] {
           ],
         },
         {
-          label: 'Performance',
-          items: [{ to: '/performance', label: t('nav.performance'), icon: IconCheck, anyOf: ['performance.read'] }],
-        },
-        {
-          label: 'Career & Exit',
-          items: [
-            { to: '/career', label: t('nav.career'), icon: IconOrgUnits, anyOf: ['career.read'] },
-            { to: '/exit', label: t('nav.exit'), icon: IconPeople, anyOf: ['exit.read'] },
-            { to: '/full-final', label: t('nav.fullFinal'), icon: IconFinance, anyOf: ['fullfinal.read'] },
-            { to: '/retirement', label: t('nav.retirement'), icon: IconClock, anyOf: ['retirement.read'] },
-          ],
-        },
-      ],
-    },
-    {
-      key: 'finance',
-      label: 'Finance',
-      icon: IconFinance,
-      groups: [
-        {
           label: 'Finance',
+          // No moduleKey override - folded into the "hr" module's sidebar for now (same
+          // treatment as Payroll above) rather than its own top-level module switcher entry.
           items: [
             {
               to: '/finance',
@@ -162,6 +169,33 @@ export function buildNavModules(t: T): NavModule[] {
               icon: IconTax,
               anyOf: ['finance.statutoryconfig.read', 'finance.taxslabs.read'],
             },
+          ],
+        },
+        {
+          label: 'Performance',
+          items: [
+            { to: '/performance', label: t('nav.performance'), icon: IconCheck, anyOf: ['performance.read'] },
+            { to: '/okr', label: t('nav.okr'), icon: IconCheck },
+          ],
+        },
+        {
+          label: 'Documents',
+          items: [
+            { to: '/files', label: t('nav.files'), icon: IconDocument },
+            { to: '/hr-letters', label: t('nav.hrLetters'), icon: IconFields },
+          ],
+        },
+        {
+          label: 'Engagement',
+          items: [{ to: '/engagement', label: t('nav.engagement'), icon: IconBell }],
+        },
+        {
+          label: 'Career & Exit',
+          items: [
+            { to: '/career', label: t('nav.career'), icon: IconOrgUnits, anyOf: ['career.read'] },
+            { to: '/exit', label: t('nav.exit'), icon: IconPeople, anyOf: ['exit.read'] },
+            { to: '/full-final', label: t('nav.fullFinal'), icon: IconFinance, anyOf: ['fullfinal.read'] },
+            { to: '/retirement', label: t('nav.retirement'), icon: IconClock, anyOf: ['retirement.read'] },
           ],
         },
       ],

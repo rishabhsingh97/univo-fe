@@ -1,21 +1,37 @@
-// Local-dev-only reverse proxy: listens on port 80 and forwards everything (including
-// WebSocket upgrades, so Vite's HMR still works) to the Vite dev server on 5173. Lets a
-// hosts-file entry like "127.0.0.1 demo.univoapps.com" be visited with no port suffix
-// (http://demo.univoapps.com instead of http://demo.univoapps.com:5173), which the
-// hostname-based tenant resolution feature needs to test realistically. Not used in
-// production - Vercel serves the real app directly on 443, no proxy involved.
+// Local-dev-only reverse proxy: listens on port 80 and forwards to either the Vite dev server
+// (5173) or the Spring Boot backend (8888), picked by the request's Host header, so a
+// hosts-file entry like "127.0.0.1 demo.univoapps.com" / "127.0.0.1 localapi.univoapps.com" can
+// be visited with no port suffix. Not used in production - Vercel serves the frontend directly
+// and the backend has its own real domain (api.univoapps.com), no proxy involved.
+//
+// Routing by Host (not just blindly forwarding everything to Vite) matters for more than
+// convenience: cookie-based auth (see AuthCookieService) sets SameSite=Lax cookies, which the
+// browser withholds on cross-site fetch/XHR calls. In production the frontend
+// ({tenant}.univoapps.com) and backend (api.univoapps.com) share the same registrable domain, so
+// they're same-site and the cookies flow. Locally, without this proxy, the frontend would call
+// the backend directly at http://localhost:8888 - a completely different site from
+// *.univoapps.com - so the browser would silently drop the auth cookies on every API call after
+// login, an infinite bounce back to the login page. Routing localapi.univoapps.com through this
+// same port-80 proxy to the real backend keeps the frontend and "backend" on the same site
+// locally too.
 import http from 'node:http';
 import net from 'node:net';
 
-// 'localhost' (not a hardcoded 127.0.0.1) so Node's own resolver picks whichever loopback
-// address Vite actually bound to - on this machine that's IPv6 (::1), not IPv4.
-const TARGET_HOST = 'localhost';
-const TARGET_PORT = 5173;
+const VITE_HOST = 'localhost';
+const VITE_PORT = 5173;
+const BACKEND_HOST = 'localhost';
+const BACKEND_PORT = 8888;
 const LISTEN_PORT = 80;
 
+function targetFor(hostHeader) {
+  const host = (hostHeader ?? '').split(':')[0];
+  return host === 'localapi.univoapps.com' ? { host: BACKEND_HOST, port: BACKEND_PORT } : { host: VITE_HOST, port: VITE_PORT };
+}
+
 const server = http.createServer((req, res) => {
+  const { host, port } = targetFor(req.headers.host);
   const proxyReq = http.request(
-    { host: TARGET_HOST, port: TARGET_PORT, path: req.url, method: req.method, headers: req.headers },
+    { host, port, path: req.url, method: req.method, headers: req.headers },
     (proxyRes) => {
       res.writeHead(proxyRes.statusCode ?? 502, proxyRes.headers);
       proxyRes.pipe(res);
@@ -23,13 +39,14 @@ const server = http.createServer((req, res) => {
   );
   proxyReq.on('error', (err) => {
     res.writeHead(502, { 'Content-Type': 'text/plain' });
-    res.end(`Proxy error reaching Vite on :${TARGET_PORT} - is \`npm run dev\` running? (${err.message})`);
+    res.end(`Proxy error reaching ${host}:${port} - is it running? (${err.message})`);
   });
   req.pipe(proxyReq);
 });
 
 server.on('upgrade', (req, clientSocket, head) => {
-  const proxySocket = net.connect(TARGET_PORT, TARGET_HOST, () => {
+  const { host, port } = targetFor(req.headers.host);
+  const proxySocket = net.connect(port, host, () => {
     const headerLines = Object.entries(req.headers).map(([key, value]) => `${key}: ${value}`);
     proxySocket.write(`${req.method} ${req.url} HTTP/1.1\r\n${headerLines.join('\r\n')}\r\n\r\n`);
     if (head?.length) proxySocket.write(head);
@@ -40,8 +57,8 @@ server.on('upgrade', (req, clientSocket, head) => {
 });
 
 server.listen(LISTEN_PORT, () => {
-  console.log(`Dev reverse proxy: http://localhost:${LISTEN_PORT} -> http://${TARGET_HOST}:${TARGET_PORT}`);
-  console.log('Add a hosts-file entry (e.g. "127.0.0.1 demo.univoapps.com"), then visit it with no port.');
+  console.log(`Dev reverse proxy: http://localhost:${LISTEN_PORT} -> Vite (${VITE_HOST}:${VITE_PORT}) or backend (${BACKEND_HOST}:${BACKEND_PORT}), routed by Host header (localapi.univoapps.com -> backend).`);
+  console.log('Add hosts-file entries (e.g. "127.0.0.1 demo.univoapps.com" and "127.0.0.1 localapi.univoapps.com"), then visit either with no port.');
 });
 
 server.on('error', (err) => {

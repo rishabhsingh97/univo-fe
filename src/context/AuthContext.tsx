@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { authApi } from '../api/auth/authApi';
 import { meApi } from '../api/auth/meApi';
 import { domainApi } from '../api/public/domainApi';
-import { TOKEN_STORAGE_KEY } from '../api/client';
 import type { GoogleLoginRequest, LoginRequest, LoginResponse } from '../types/auth';
 
 interface Session {
@@ -71,7 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const applySession = (tenantCode: string, response: LoginResponse) => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, response.accessToken);
     const nextSession: Session = {
       tenantCode,
       email: response.email,
@@ -86,8 +84,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(nextSession);
   };
 
+  // Fire-and-forget: the server-side revoke matters for the refresh token that's about to be
+  // cleared, but the local session must disappear immediately either way (e.g. the network
+  // being down shouldn't trap the user in a "logged in" UI they can't get out of).
   const logout = () => {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    authApi.logout().catch(() => undefined);
     localStorage.removeItem(SESSION_STORAGE_KEY);
     setSession(null);
   };

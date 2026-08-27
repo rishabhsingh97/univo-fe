@@ -1,0 +1,496 @@
+/*
+ * univo-refresh.css — the component-level half of the redesign.
+ *
+ * HOW TO USE THIS FILE
+ * Two options:
+ *   A) Fast preview (zero risk): import it once, LAST, in src/main.tsx, after theme.css and
+ *      after any component that imports ui.css/layout.css. Every rule here is written to win
+ *      on source order alone (no !important, no specificity hacks), so it overlays the
+ *      existing look and you can eyeball the whole app in one commit and revert with one line.
+ *   B) Permanent (recommended once approved): fold each block into the file named in its
+ *      comment — ui.css or layout.css — and delete this file. Keeping a permanent override
+ *      layer means every future change has to be made twice.
+ *
+ * Nothing here introduces a new color literal: every value is a token from theme.css.
+ */
+
+/* ---------- ui.css · buttons ----------
+   Flat primary instead of --gradient-primary, and no translateY lift on hover. A gradient plus
+   a lift is a consumer-app affordance; in a dense admin table a button that moves makes the
+   row it sits in feel unstable. Weight drops 600→500 because at 11.5px, 600 on a filled
+   button is visually heavier than the page's own headings. */
+.btn {
+  padding: var(--space-2) var(--space-px-12);
+  font-size: var(--text-base);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-sm {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.btn:active:not(:disabled) {
+  transform: none;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  box-shadow: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  box-shadow: none;
+  transform: none;
+}
+
+/* Secondary buttons pick up the brand tint on hover rather than a neutral fill — this is the
+   most-used button in the app (every table row action) and the tint is what makes the
+   interface read as one hue rather than gray chrome with a blue accent. */
+.btn-secondary {
+  box-shadow: none;
+  border-color: var(--color-border-strong);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
+}
+
+/* Danger as an outline button, not a filled one. In the Approvals inbox every pending row
+   shows Approve next to Reject; a solid red Reject read as the primary action on the row. */
+.btn-danger {
+  background: var(--color-surface);
+  color: var(--color-danger);
+  border-color: var(--color-danger-border);
+  box-shadow: none;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  box-shadow: none;
+}
+
+/* ---------- ui.css · inputs ---------- */
+.input, .select {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-base);
+}
+
+.field-label {
+  font-size: var(--text-base);
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+/* ---------- ui.css · cards ---------- */
+.card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  padding: var(--space-4);
+}
+
+/* ---------- ui.css · tables ----------
+   The single biggest density change: cells go from 10px/14px to 6px/12px, so roughly 40% more
+   rows land above the fold — the point of an ERP list view. */
+.table td {
+  padding: var(--table-cell-padding);
+  font-size: var(--text-base);
+  border-bottom: 1px solid var(--color-fill-subtle);
+}
+
+.table th {
+  padding: var(--table-cell-padding);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--table-header-text);
+  background: var(--table-header-bg);
+  /* Was 2px solid var(--color-primary). At a light header the primary rule read as a stray
+     underline; a plain border keeps the header quiet. */
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table th:first-child,
+.table td:first-child {
+  padding-left: var(--space-4);
+}
+
+.table th:last-child,
+.table td:last-child {
+  padding-right: var(--space-4);
+}
+
+/* Zebra striping off. It exists to help the eye track a row across a wide table, but with
+   6px cell padding the rows are close enough that alternating fills read as banding noise;
+   the hover state does the tracking job instead. Re-enable if you have tables wider than
+   ~10 columns where users report losing their row. */
+.table tbody tr:nth-child(even) {
+  background: transparent;
+}
+
+.table tbody tr:hover {
+  background: var(--color-fill-subtle);
+  /* The inset left accent bar is dropped — see .btn-primary note; movement and strong accents
+     inside a row make a dense table feel busy. */
+  box-shadow: none;
+}
+
+.table tbody tr:hover td.table-cell-sticky-right {
+  background: var(--color-fill-subtle);
+}
+
+.table-cell-stack-secondary {
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+}
+
+.table-pagination {
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-fill-subtle);
+  font-size: var(--text-base);
+}
+
+.table-pagination-page,
+.table-pagination-size,
+.table-pagination-input,
+.table-pagination-size-select {
+  font-size: var(--text-base);
+}
+
+/* ---------- ui.css · badges ----------
+   Rectangular (radius-sm) rather than a full-round pill, and the ::before dot is removed. At
+   10px a pill-plus-dot is three shapes carrying one word; the tinted rectangle reads as a
+   status field in a table, which is what it is. */
+.badge {
+  border-radius: var(--radius-sm);
+  padding: var(--space-px-2) var(--space-px-7);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.badge::before {
+  display: none;
+}
+
+.badge-neutral {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+
+/* ---------- ui.css · page header ---------- */
+.page-header {
+  align-items: flex-start;
+  margin-bottom: var(--space-5);
+}
+
+.page-header h1 {
+  font-size: var(--text-h1);
+  font-weight: 600;
+}
+
+.page-header p {
+  font-size: var(--text-base);
+  max-width: 78ch;
+  text-wrap: pretty;
+}
+
+/* ---------- ui.css · modal ----------
+   Centered rather than top-aligned, and the panel scrolls internally instead of the backdrop
+   scrolling — with the tall multi-section forms (Add Candidate) the header scrolled away and
+   left users with no visible close button. */
+.modal-backdrop {
+  align-items: center;
+  padding: var(--space-6) var(--space-4);
+  overflow: hidden;
+  background: oklch(0.255 0.037 262 / 0.45);
+}
+
+.modal-panel {
+  min-width: 0;
+  width: 80vw;
+  max-width: 1000px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+
+/* Sticky header + footer inside the scrolling panel. Requires the Modal.tsx change in
+   PORT.md (title row and actions row as siblings of a scrolling body). */
+.modal-header {
+  flex: none;
+  margin: 0;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-header h2 {
+  font-size: var(--text-xl);
+}
+
+.modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-5);
+}
+
+.modal-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-fill-subtle);
+}
+
+/* A muted italic line next to the primary action, for features whose data isn't persisted
+   yet. Cheap honesty: it stops a demo from being mistaken for a working feature. */
+.preview-hint {
+  font-size: var(--text-base);
+  font-style: italic;
+  color: var(--color-text-subtle);
+}
+
+/* ---------- ui.css · repeatable row groups ----------
+   Used for Education / Experience entries in Add Candidate, and for key results under an OKR. */
+.repeat-row {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-fill-subtle);
+  padding: var(--space-3);
+}
+
+.repeat-row-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.7fr auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.repeat-add {
+  align-self: start;
+}
+
+/* Dropzone-style upload control with a filename readout beside it. */
+.upload-drop {
+  flex: 1;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-fill-subtle);
+  padding: var(--space-4);
+  text-align: center;
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.upload-drop:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.upload-drop-hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+  margin-top: var(--space-1);
+}
+
+.upload-file {
+  width: 210px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-base);
+}
+
+/* ---------- ui.css · action menu ---------- */
+.action-menu-trigger,
+.action-icon-btn {
+  width: 26px;
+  height: 26px;
+}
+
+.action-menu-item {
+  padding: var(--space-2) var(--space-px-8);
+  font-size: var(--text-base);
+}
+
+/* ---------- layout.css · shell ---------- */
+.sidebar {
+  padding: 0;
+  gap: 0;
+}
+
+.sidebar-brand {
+  height: 52px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+.module-switch {
+  margin: var(--space-3) var(--space-3) var(--space-2);
+}
+
+.module-switch-trigger {
+  background: var(--color-fill-subtle);
+  padding: var(--space-px-7) var(--space-px-9);
+}
+
+.switch-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+}
+
+.switch-name {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+/* Active nav is a tint plus a colored dot, not a filled gradient bar. The gradient made the
+   selected item the loudest element on the page — heavier than the primary action button — and
+   in a 14-group nav that's the wrong thing to shout. */
+.sidebar-link.active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+  box-shadow: none;
+  font-weight: 600;
+}
+
+.sidebar-link,
+.nav-group summary {
+  padding: var(--space-2) var(--space-px-9);
+  font-size: var(--text-base);
+}
+
+.nav-group summary {
+  color: var(--color-text-muted);
+}
+
+/* Bold + full-strength text only - no background fill, so the parent group reads as
+   emphasized without competing with .nav-sublink.active's own tint on the actual active leaf. */
+.nav-group summary.active {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* Indent without the vertical guide line: at this density the line plus a dot per row was two
+   competing alignment cues. The dot alone carries it. */
+.nav-sublist {
+  padding: var(--space-px-2) 0 var(--space-2) 0;
+}
+
+.nav-sublist::before {
+  display: none;
+}
+
+.nav-sublink {
+  /* Indent as margin, not padding: lines the label up with the parent summary's own label
+     (summary's padding-left --space-px-9 + its chevron width --space-px-13 + its flex gap
+     --space-2, plus one more --space-2 of breathing room) while keeping that gutter outside the
+     row's own box - so .active's background starts at the text, not at the sidebar edge. Mirrored
+     on the right so the pill sits inset by the same amount on both sides, not flush right. */
+  --sublink-indent: calc(var(--space-px-9) + var(--space-px-13) + var(--space-2) + var(--space-2));
+  margin: 0 var(--sublink-indent);
+  padding: var(--space-px-5) var(--space-px-9);
+  font-size: var(--text-base);
+  gap: var(--space-px-9);
+}
+
+.nav-sublink .dot {
+  background: var(--color-border-strong);
+  opacity: 1;
+}
+
+.nav-sublink.active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+  font-weight: 600;
+}
+
+/* Counts on nav rows (Approvals 18, Chat 4). Add as <span className="nav-count">18</span>. */
+.nav-count {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+  border-radius: var(--radius-sm);
+  padding: var(--space-px-1) var(--space-px-5);
+}
+
+.topbar {
+  height: 52px;
+  padding: 0 var(--space-5);
+  gap: var(--space-3);
+}
+
+.topbar-search-input {
+  background: var(--color-fill-subtle);
+  padding: var(--space-2) var(--space-px-46) var(--space-2) var(--space-px-30);
+  font-size: var(--text-base);
+}
+
+/* ⌘K affordance inside the search field. */
+.topbar-search-kbd {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-px-1) var(--space-px-5);
+  background: var(--color-surface);
+  pointer-events: none;
+}
+
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.icon-btn:hover {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border);
+}
+
+/* Employee/user avatars are rounded squares; only chat participants stay circular, so a face
+   in a message thread is distinguishable at a glance from an avatar in a table cell. */
+.avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.avatar-round {
+  border-radius: var(--radius-full);
+}
+
+.main-content {
+  padding: var(--space-5) var(--space-6) var(--space-px-48);
+}

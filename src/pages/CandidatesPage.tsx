@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { Badge, Button, Modal, PageHeader, PagedDataTable, SelectField, TextField, statusTone } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
 import type { CandidateRequest, CandidateResponse, CandidateStatus } from '../types/recruitment';
+import { CandidateDetailsFormFields, emptyCandidateExtras, type CandidateExtras } from '../components/CandidateDetailsForm';
 
 const STATUSES: CandidateStatus[] = ['APPLIED', 'SCREENING', 'INTERVIEWING', 'OFFERED', 'HIRED', 'REJECTED'];
 
@@ -19,6 +20,7 @@ export function CandidatesPage() {
   const { hasPermission } = useAuth();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<CandidateRequest>(emptyForm());
+  const [extras, setExtras] = useState<CandidateExtras>(emptyCandidateExtras());
   const [editing, setEditing] = useState<CandidateResponse | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
@@ -30,9 +32,15 @@ export function CandidatesPage() {
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['candidates'] });
 
+  const closeCreate = () => {
+    setShowCreate(false);
+    setForm(emptyForm());
+    setExtras(emptyCandidateExtras());
+  };
+
   const createMutation = useMutation({
     mutationFn: (request: CandidateRequest) => candidateApi.create(request),
-    onSuccess: () => { invalidate(); setForm(emptyForm()); setShowCreate(false); },
+    onSuccess: () => { invalidate(); closeCreate(); },
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, request }: { id: number; request: CandidateRequest }) => candidateApi.update(id, request),
@@ -88,14 +96,16 @@ export function CandidatesPage() {
       />
 
       {showCreate && (
-        <Modal title={t('pages.candidates.createTitle')} onClose={() => setShowCreate(false)}>
+        <Modal title={t('pages.candidates.createTitle')} onClose={closeCreate}>
           <form onSubmit={(event: FormEvent) => { event.preventDefault(); createMutation.mutate(form); }} className="form-grid">
             {fields(form, setForm)}
+            <CandidateDetailsFormFields value={extras} onChange={setExtras} />
+            <span className="field-hint" style={{ gridColumn: '1 / -1' }}>{t('pages.addCandidate.mockNotice')}</span>
             <div className="form-actions">
               <Button type="submit" disabled={createMutation.isPending || !form.jobPostingId}>
                 {createMutation.isPending ? t('common.creating') : t('common.create')}
               </Button>
-              <Button type="button" variant="secondary" onClick={() => setShowCreate(false)}>{t('common.cancel')}</Button>
+              <Button type="button" variant="secondary" onClick={closeCreate}>{t('common.cancel')}</Button>
             </div>
           </form>
         </Modal>

@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { platformAuthApi } from '../api/platform/platformAuthApi';
-import { TOKEN_STORAGE_KEY } from '../api/client';
 import type { PlatformLoginRequest } from '../types/platform';
 
 interface PlatformSession {
@@ -14,8 +13,10 @@ interface PlatformAuthContextValue {
 }
 
 // Deliberately its own storage key, distinct from the tenant app's 'erp.session' - the two
-// contexts share the axios client's token slot (see api/client.ts) but never need to coexist,
-// since a browser tab is either a tenant user or a platform admin at a given time.
+// sessions now also live in entirely separate cookies (erp_platform_at/_rt vs erp_at/_rt, see
+// AuthCookieService), so unlike the old shared-token-slot design, a tenant session and a
+// platform-admin session really can coexist in the same browser without either clobbering the
+// other; this key just keeps their non-secret session metadata separate too.
 const SESSION_STORAGE_KEY = 'erp.platform.session';
 const PlatformAuthContext = createContext<PlatformAuthContextValue | undefined>(undefined);
 
@@ -34,14 +35,13 @@ export function PlatformAuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (request: PlatformLoginRequest) => {
     const response = await platformAuthApi.login(request);
-    localStorage.setItem(TOKEN_STORAGE_KEY, response.accessToken);
     const nextSession: PlatformSession = { email: response.email };
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextSession));
     setSession(nextSession);
   };
 
   const logout = () => {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    platformAuthApi.logout().catch(() => undefined);
     localStorage.removeItem(SESSION_STORAGE_KEY);
     setSession(null);
   };

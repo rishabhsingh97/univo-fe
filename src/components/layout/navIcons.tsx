@@ -267,3 +267,12 @@ export function IconX(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function IconTravel(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M22 2L11 13" />
+      <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+    </Icon>
+  );
+}

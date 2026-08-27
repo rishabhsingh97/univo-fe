@@ -3,10 +3,8 @@ export interface PlatformLoginRequest {
   password: string;
 }
 
+/** No token fields - see auth.ts LoginResponse's doc comment. */
 export interface PlatformLoginResponse {
-  accessToken: string;
-  tokenType: string;
-  expiresInSeconds: number;
   email: string;
 }
 

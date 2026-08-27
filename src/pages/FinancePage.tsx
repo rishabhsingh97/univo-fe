@@ -4,7 +4,7 @@ import { loanApi } from '../api/finance/loanApi';
 import { reimbursementApi } from '../api/finance/reimbursementApi';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
-import { ApprovalActions, Button, Card, EmployeeSelect, Modal, PageHeader, PagedDataTable, TextField } from '../components/ui';
+import { ApprovalActions, Button, Card, EmployeeSelect, Modal, PageHeader, PagedDataTable, SelectField, TextField } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
 import type {
   LoanAdvanceRequest,
@@ -17,6 +17,8 @@ import type {
 function emptyLoanForm(): LoanAdvanceRequest {
   return { employeeId: 0, amount: 0, reason: '', requestedDate: new Date().toISOString().slice(0, 10) };
 }
+
+const REIMBURSEMENT_CATEGORIES = ['Travel', 'Assets', 'Bills', 'Meals', 'Communication', 'Training', 'Medical', 'Other'];
 
 function emptyReimbursementForm(): ReimbursementRequest {
   return { employeeId: 0, amount: 0, category: '', description: '', submittedDate: new Date().toISOString().slice(0, 10) };
@@ -196,11 +198,14 @@ export function FinancePage() {
               onChange={(e) => setReimbursementForm({ ...reimbursementForm, amount: Number(e.target.value) })}
               required
             />
-            <TextField
+            <SelectField
               label={t('fields.category')}
               value={reimbursementForm.category ?? ''}
               onChange={(e) => setReimbursementForm({ ...reimbursementForm, category: e.target.value })}
-            />
+            >
+              <option value="">{t('common.selectOption')}</option>
+              {REIMBURSEMENT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </SelectField>
             <TextField
               label={t('fields.submittedDate')}
               type="date"

@@ -1,6 +1,6 @@
 .app-shell {
   display: grid;
-  grid-template-columns: 248px 1fr;
+  grid-template-columns: var(--sidebar-width) 1fr;
   height: 100vh;
   overflow: hidden;
 }
@@ -11,7 +11,7 @@
   padding: var(--space-5) var(--space-3);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-px-2);
   height: 100vh;
   overflow-y: auto;
   transition: background-color 0.2s ease, border-color 0.2s ease;
@@ -30,7 +30,7 @@
   justify-content: space-between;
   gap: var(--space-2);
   font-weight: 800;
-  font-size: 17px;
+  font-size: var(--text-18-5);
   letter-spacing: -0.02em;
   margin: 0 var(--space-2) var(--space-5);
   color: var(--color-text);
@@ -78,8 +78,11 @@
 }
 
 /* Hidden on desktop (the sidebar is already always visible there) - shown only inside the
-   drawer media query at the end of this file. */
-.topbar-menu-btn {
+   drawer media query at the end of this file. Qualified with .icon-btn (not just
+   .topbar-menu-btn alone) so this wins on specificity over .icon-btn's own `display: grid`
+   further down this file - same specificity + later source order would otherwise make that win
+   instead, leaving the button visible on every viewport regardless of this rule. */
+.icon-btn.topbar-menu-btn {
   display: none;
 }
 
@@ -87,11 +90,11 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 9px var(--space-3);
+  padding: var(--space-px-9) var(--space-3);
   border-radius: var(--radius-sm);
   color: var(--color-text-muted);
   text-decoration: none;
-  font-size: 13.5px;
+  font-size: var(--text-sidebar-link);
   font-weight: 500;
   transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -101,10 +104,13 @@
   color: var(--color-text);
 }
 
+/* Light tint rather than a solid fill - in a 14-group nav the active top-level link shouldn't
+   be the loudest element on screen; see .nav-sublink.active for the slightly darker sub-item
+   treatment that keeps the two levels visually distinct. */
 .sidebar-link.active {
-  background: var(--gradient-primary);
-  color: var(--color-primary-contrast);
-  box-shadow: var(--shadow-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+  box-shadow: none;
   font-weight: 600;
 }
 
@@ -136,7 +142,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 8px 9px;
+  padding: var(--space-px-8) var(--space-px-9);
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   background: var(--color-surface-alt);
@@ -152,7 +158,7 @@
 .switch-icon {
   width: 27px;
   height: 27px;
-  border-radius: 7px;
+  border-radius: var(--radius-7);
   background: var(--color-primary-soft);
   color: var(--color-primary);
   display: grid;
@@ -173,13 +179,13 @@
 }
 
 .switch-name {
-  font-size: 12.5px;
+  font-size: var(--text-14);
   font-weight: 700;
   color: var(--color-text);
 }
 
 .switch-tag {
-  font-size: 10px;
+  font-size: var(--text-sidebar-tag);
   color: var(--color-text-muted);
 }
 
@@ -205,20 +211,20 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  padding: 6px;
+  padding: var(--space-2);
   z-index: 30;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--space-px-1);
 }
 
 .switch-item {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 7px 8px;
+  padding: var(--space-px-7) var(--space-px-8);
   border-radius: var(--radius-sm);
-  font-size: 12.5px;
+  font-size: var(--text-14);
   color: var(--color-text);
   background: transparent;
   border: none;
@@ -252,14 +258,14 @@
 
 .switch-view-all {
   width: 100%;
-  margin-top: 4px;
-  padding: 8px;
+  margin-top: var(--space-1);
+  padding: var(--space-px-8);
   border: none;
   border-top: 1px solid var(--color-border);
   border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   background: transparent;
   color: var(--color-primary);
-  font-size: 12px;
+  font-size: var(--text-sidebar-viewall);
   font-weight: 600;
   text-align: center;
   cursor: pointer;
@@ -291,7 +297,7 @@
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  font-size: 12.5px;
+  font-size: var(--text-14);
   color: var(--color-text);
   cursor: pointer;
   text-align: center;
@@ -347,16 +353,16 @@
 
 /* ---------- Nested nav groups ---------- */
 .nav-group {
-  margin-bottom: 1px;
+  margin-bottom: var(--space-px-1);
 }
 
 .nav-group summary {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 8px var(--space-3);
+  padding: var(--space-px-8) var(--space-3);
   border-radius: var(--radius-sm);
-  font-size: 13.3px;
+  font-size: var(--text-14-8);
   font-weight: 500;
   color: var(--color-text-muted);
   cursor: pointer;
@@ -373,9 +379,15 @@
   color: var(--color-text);
 }
 
+/* The group containing the active page reads as bolder only - no background/color fill, so it
+   doesn't compete with .nav-sublink.active's own tint on the actual active leaf below it. */
+.nav-group summary.active {
+  font-weight: 600;
+}
+
 .nav-group summary .chevron {
-  width: 13px;
-  height: 13px;
+  width: var(--space-px-13);
+  height: var(--space-px-13);
   opacity: 0.55;
   flex-shrink: 0;
   transition: transform 0.15s ease;
@@ -395,28 +407,21 @@
 .nav-sublist {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding: 2px 0 6px 30px;
+  gap: var(--space-px-1);
+  padding: var(--space-px-2) 0 var(--space-2);
   position: relative;
-}
-
-.nav-sublist::before {
-  content: '';
-  position: absolute;
-  left: 15px;
-  top: 0;
-  bottom: 8px;
-  width: 1px;
-  background: var(--color-border);
 }
 
 .nav-sublink {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 6px var(--space-3);
+  /* Left padding lines the label up with the parent summary's own label, which starts after its
+     --space-px-13 chevron + var(--space-2) gap (see .nav-group summary .chevron above - same
+     13px, kept as the same token so the two stay in sync if it's ever retuned). */
+  padding: var(--space-2) var(--space-3) var(--space-2) calc(var(--space-3) + var(--space-px-13) + var(--space-2));
   border-radius: var(--radius-sm);
-  font-size: 12.8px;
+  font-size: var(--text-14-3);
   color: var(--color-text-muted);
   text-decoration: none;
 }
@@ -426,24 +431,12 @@
   color: var(--color-text);
 }
 
-.nav-sublink .dot {
-  width: 5px;
-  height: 5px;
-  border-radius: var(--radius-full);
-  background: var(--color-text-muted);
-  flex-shrink: 0;
-  opacity: 0.6;
-}
-
+/* Text-only emphasis (no fill) - the parent .nav-group summary.active already carries the
+   background tint for the group, so the active leaf just needs to read as bolder/colored
+   inside it rather than adding a second nested box. */
 .nav-sublink.active {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  font-weight: 600;
-}
-
-.nav-sublink.active .dot {
-  background: var(--color-primary);
-  opacity: 1;
+  color: var(--color-primary-hover);
+  font-weight: 700;
 }
 
 .avatar {
@@ -455,7 +448,7 @@
   display: grid;
   place-items: center;
   font-weight: 700;
-  font-size: 12px;
+  font-size: var(--text-md);
   flex-shrink: 0;
 }
 
@@ -497,8 +490,8 @@
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  padding: 8px 12px 8px 34px;
-  font-size: 13px;
+  padding: var(--space-px-8) var(--space-px-12) var(--space-px-8) var(--space-px-34);
+  font-size: var(--text-13);
   color: var(--color-text);
 }
 
@@ -521,20 +514,20 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  padding: 6px;
+  padding: var(--space-2);
   z-index: 30;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--space-px-1);
 }
 
 .topbar-search-item {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 8px 9px;
+  padding: var(--space-px-8) var(--space-px-9);
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: var(--text-13);
   color: var(--color-text);
   background: transparent;
   border: none;
@@ -548,8 +541,8 @@
 }
 
 .topbar-search-empty {
-  padding: 8px 9px;
-  font-size: 13px;
+  padding: var(--space-px-8) var(--space-px-9);
+  font-size: var(--text-13);
   color: var(--color-text-muted);
 }
 
@@ -596,12 +589,12 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  padding: 10px 12px;
+  padding: var(--space-3) var(--space-px-12);
   z-index: 30;
 }
 
 .icon-popover-empty {
-  font-size: 12.5px;
+  font-size: var(--text-lg);
   color: var(--color-text-muted);
 }
 
@@ -615,11 +608,11 @@
   right: -4px;
   min-width: 16px;
   height: 16px;
-  padding: 0 3px;
+  padding: 0 var(--space-px-3);
   border-radius: var(--radius-full);
   background: var(--color-danger);
   color: #fff;
-  font-size: 10px;
+  font-size: var(--text-sm);
   font-weight: 700;
   line-height: 16px;
   text-align: center;
@@ -638,8 +631,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  font-size: 13px;
+  padding: var(--space-3) var(--space-px-12);
+  font-size: var(--text-13);
   font-weight: 600;
   color: var(--color-text);
   background: var(--color-surface);
@@ -650,7 +643,7 @@
   border: none;
   background: none;
   color: var(--color-primary);
-  font-size: 12px;
+  font-size: var(--text-md);
   font-weight: 500;
   cursor: pointer;
   padding: 0;
@@ -663,7 +656,7 @@
   border: none;
   border-bottom: 1px solid var(--color-border);
   background: none;
-  padding: 10px 12px;
+  padding: var(--space-3) var(--space-px-12);
   cursor: pointer;
 }
 
@@ -685,21 +678,21 @@
 }
 
 .notification-row-title {
-  font-size: 13px;
+  font-size: var(--text-13);
   font-weight: 600;
   color: var(--color-text);
 }
 
 .notification-row-message {
-  font-size: 12.5px;
+  font-size: var(--text-lg);
   color: var(--color-text-muted);
-  margin-top: 2px;
+  margin-top: var(--space-px-2);
 }
 
 .notification-row-time {
-  font-size: 11px;
+  font-size: var(--text-11);
   color: var(--color-text-muted);
-  margin-top: 4px;
+  margin-top: var(--space-1);
 }
 
 .topbar-who {
@@ -716,11 +709,11 @@
 }
 
 .profile-menu-name {
-  font-size: 13px;
+  font-size: var(--text-13);
   font-weight: 600;
   color: var(--color-text);
-  padding: 4px 8px 10px;
-  margin-bottom: 4px;
+  padding: var(--space-1) var(--space-px-8) var(--space-3);
+  margin-bottom: var(--space-1);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -729,11 +722,11 @@
   align-items: center;
   gap: var(--space-2);
   width: 100%;
-  padding: 8px;
+  padding: var(--space-px-8);
   border: none;
   background: none;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: var(--text-13);
   color: var(--color-text);
   cursor: pointer;
   text-align: left;
@@ -785,7 +778,7 @@
   right: var(--space-4);
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
-  font-size: 18px;
+  font-size: var(--text-18);
   line-height: 1;
   cursor: pointer;
   color: var(--color-text-muted);
@@ -856,7 +849,7 @@
     display: flex;
   }
 
-  .topbar-menu-btn {
+  .icon-btn.topbar-menu-btn {
     display: grid;
   }
 

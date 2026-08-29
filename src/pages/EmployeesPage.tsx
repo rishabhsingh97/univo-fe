@@ -166,7 +166,6 @@ export function EmployeesPage() {
         <Modal title={t('pages.employees.credentialsTitle')} onClose={() => setCredentials(null)}>
           <p>{t('pages.employees.credentialsHint')}</p>
           <TextField label={t('fields.email')} value={credentials.email} readOnly />
-          <TextField label={t('fields.temporaryPassword')} value={credentials.temporaryPassword} readOnly />
           <div className="form-actions">
             <Button type="button" onClick={() => setCredentials(null)}>{t('common.close')}</Button>
           </div>

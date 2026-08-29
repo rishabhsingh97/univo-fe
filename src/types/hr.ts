@@ -184,7 +184,6 @@ export interface ReassignManagerRequest {
 
 export interface GenerateCredentialsResponse {
   email: string;
-  temporaryPassword: string;
 }
 
 export interface EmployeeFilterOptionsResponse {

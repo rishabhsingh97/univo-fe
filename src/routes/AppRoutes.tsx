@@ -5,6 +5,7 @@ import { PlatformLayout } from '../components/layout/PlatformLayout';
 import { ProtectedRoute } from './ProtectedRoute';
 import { PlatformProtectedRoute } from './PlatformProtectedRoute';
 import { LoginPage } from '../pages/LoginPage';
+import { SetPasswordPage } from '../pages/SetPasswordPage';
 import { GoogleAuthBridgePage } from '../pages/GoogleAuthBridgePage';
 import { SignupStep1Page } from '../pages/signup/SignupStep1Page';
 import { SignupStep2Page } from '../pages/signup/SignupStep2Page';
@@ -48,7 +49,8 @@ import { SalaryComponentsPage } from '../pages/SalaryComponentsPage';
 import { FinancePage } from '../pages/FinancePage';
 import { TaxConfigPage } from '../pages/TaxConfigPage';
 import { StatutoryConfigPage } from '../pages/StatutoryConfigPage';
-import { PerformancePage } from '../pages/PerformancePage';
+import { GoalsPage } from '../pages/GoalsPage';
+import { AppraisalsPage } from '../pages/AppraisalsPage';
 import { CareerPage } from '../pages/CareerPage';
 import { ExitPage } from '../pages/ExitPage';
 import { FullFinalPage } from '../pages/FullFinalPage';
@@ -65,6 +67,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/set-password" element={<SetPasswordPage />} />
       <Route path="/google-bridge" element={<GoogleAuthBridgePage />} />
       <Route path="/signup" element={<SignupStep1Page />} />
       <Route path="/signup/:draftId/company" element={<SignupStep2Page />} />
@@ -117,7 +120,8 @@ export function AppRoutes() {
           <Route path="/finance" element={<FinancePage />} />
           <Route path="/finance/tax-config" element={<TaxConfigPage />} />
           <Route path="/finance/statutory-config" element={<StatutoryConfigPage />} />
-          <Route path="/performance" element={<PerformancePage />} />
+          <Route path="/performance/goals" element={<GoalsPage />} />
+          <Route path="/performance/appraisals" element={<AppraisalsPage />} />
           <Route path="/career" element={<CareerPage />} />
           <Route path="/exit" element={<ExitPage />} />
           <Route path="/full-final" element={<FullFinalPage />} />

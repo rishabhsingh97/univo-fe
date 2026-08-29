@@ -79,9 +79,10 @@ export interface CreateUserRequest {
   roleIds: number[];
 }
 
-export interface UserCreateResponse {
-  user: UserResponse;
-  temporaryPassword: string;
+export interface SetPasswordRequest {
+  tenantCode: string;
+  token: string;
+  newPassword: string;
 }
 
 export interface UpdateTimezoneRequest {

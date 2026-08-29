@@ -176,7 +176,8 @@ export function buildNavModules(t: T): NavModule[] {
         {
           label: 'Performance',
           items: [
-            { to: '/performance', label: t('nav.performance'), icon: IconCheck, anyOf: ['performance.read'] },
+            { to: '/performance/goals', label: t('nav.goals'), icon: IconCheck, anyOf: ['performance.read'] },
+            { to: '/performance/appraisals', label: t('nav.appraisals'), icon: IconCheck, anyOf: ['performance.read'] },
             { to: '/okr', label: t('nav.okr'), icon: IconCheck },
           ],
         },

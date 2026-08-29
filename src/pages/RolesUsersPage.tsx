@@ -5,8 +5,8 @@ import { userApi } from '../api/admin/userApi';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
 import { Badge, Button, Modal, PagedDataTable, PillList, TextField, statusTone } from '../components/ui';
-import type { DataTableColumn } from '../components/ui';
-import type { CreateUserRequest, RoleRequest, RoleResponse, UserCreateResponse, UserResponse } from '../types/auth';
+import type { ActionMenuItem, DataTableColumn } from '../components/ui';
+import type { CreateUserRequest, RoleRequest, RoleResponse, UserResponse } from '../types/auth';
 
 function emptyRoleForm(): RoleRequest {
   return { name: '', label: '', description: '', permissionIds: [] };
@@ -218,7 +218,7 @@ export function UsersManagementPage() {
   const [assignRoleIds, setAssignRoleIds] = useState<number[]>([]);
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [createForm, setCreateForm] = useState<CreateUserRequest>(emptyUserForm());
-  const [createdUser, setCreatedUser] = useState<UserCreateResponse | null>(null);
+  const [createdUser, setCreatedUser] = useState<UserResponse | null>(null);
 
   const canManageUsers = hasPermission('admin.user.manage');
 
@@ -243,6 +243,11 @@ export function UsersManagementPage() {
       setCreateForm(emptyUserForm());
       setCreatedUser(response);
     },
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: (id: number) => userApi.resetPassword(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   });
 
   const handleCreateUser = (event: FormEvent) => {
@@ -272,6 +277,18 @@ export function UsersManagementPage() {
     },
   ];
 
+  const extraActions = (u: UserResponse): ActionMenuItem[] =>
+    canManageUsers
+      ? [
+          {
+            label: t('pages.accessManagement.resetPassword'),
+            disabled: resetPasswordMutation.isPending,
+            onClick: () =>
+              window.confirm(t('pages.accessManagement.confirmResetPassword')) && resetPasswordMutation.mutate(u.id),
+          },
+        ]
+      : [];
+
   return (
     <div>
       {canManageUsers && (
@@ -286,6 +303,7 @@ export function UsersManagementPage() {
         fetchPage={userApi.list}
         getRowKey={(u) => u.id}
         onEdit={canManageUsers ? (u) => openAssign(u) : undefined}
+        extraActions={extraActions}
       />
 
       {showCreateUser && (
@@ -331,8 +349,7 @@ export function UsersManagementPage() {
       {createdUser && (
         <Modal title={t('pages.accessManagement.userCreated')} onClose={() => setCreatedUser(null)}>
           <p>{t('pages.accessManagement.userCreatedHint')}</p>
-          <TextField label={t('fields.email')} value={createdUser.user.email} readOnly />
-          <TextField label={t('fields.temporaryPassword')} value={createdUser.temporaryPassword} readOnly />
+          <TextField label={t('fields.email')} value={createdUser.email} readOnly />
           <div className="form-actions">
             <Button type="button" onClick={() => setCreatedUser(null)}>{t('common.close')}</Button>
           </div>

@@ -1,6 +1,6 @@
 import { apiClient } from '../client';
 import type { PageResponse } from '../../types/common';
-import type { AssignRolesRequest, CreateUserRequest, UserCreateResponse, UserResponse } from '../../types/auth';
+import type { AssignRolesRequest, CreateUserRequest, UserResponse } from '../../types/auth';
 
 export const userApi = {
   list: (page = 0, size = 20, sort?: string) =>
@@ -11,8 +11,11 @@ export const userApi = {
   getById: (id: number) => apiClient.get<UserResponse>(`/api/admin/users/${id}`).then((res) => res.data),
 
   create: (request: CreateUserRequest) =>
-    apiClient.post<UserCreateResponse>('/api/admin/users', request).then((res) => res.data),
+    apiClient.post<UserResponse>('/api/admin/users', request).then((res) => res.data),
 
   assignRoles: (id: number, request: AssignRolesRequest) =>
     apiClient.put<UserResponse>(`/api/admin/users/${id}/roles`, request).then((res) => res.data),
+
+  resetPassword: (id: number) =>
+    apiClient.post<UserResponse>(`/api/admin/users/${id}/reset-password`).then((res) => res.data),
 };

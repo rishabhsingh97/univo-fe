@@ -20,6 +20,7 @@ import { HrLettersPage } from '../pages/HrLettersPage';
 import { TravelPage } from '../pages/TravelPage';
 import { TasksPage } from '../pages/TasksPage';
 import { OnboardingPage } from '../pages/OnboardingPage';
+import { ReferralsPage } from '../pages/ReferralsPage';
 import { ServicesPage } from '../pages/ServicesPage';
 import { OkrPage } from '../pages/OkrPage';
 import { TimeTrackerPage } from '../pages/TimeTrackerPage';
@@ -84,6 +85,7 @@ export function AppRoutes() {
           <Route path="/travel" element={<TravelPage />} />
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/referrals" element={<ReferralsPage />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/okr" element={<OkrPage />} />
           <Route path="/time-tracker" element={<TimeTrackerPage />} />

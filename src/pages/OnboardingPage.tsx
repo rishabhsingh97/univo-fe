@@ -1,9 +1,12 @@
 import { useState, type FormEvent } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { employeeApi } from '../api/hr/employeeApi';
+import { designationApi } from '../api/hr/designationApi';
 import { useLocale } from '../context/LocaleContext';
-import { Badge, Button, DataTable, EmployeeSelect, Modal, PageHeader, TextField, statusTone } from '../components/ui';
+import { useFieldLabels } from '../hooks/useFieldLabels';
+import { Badge, Button, DataTable, EmployeeSelect, Modal, PageHeader, SelectField, TextField, statusTone } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
+import type { EmployeeRequest, EmployeeResponse, EmploymentType } from '../types/hr';
 
 type OnboardingTaskCategory = 'Documentation' | 'Asset' | 'Policy' | 'Orientation' | 'Other';
 type OnboardingStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
@@ -17,9 +20,9 @@ interface OnboardingTask {
 
 interface OnboardingRecord {
   id: number;
+  employeeId: number;
   employeeName: string;
   designation: string;
-  department: string;
   joiningDate: string;
   buddyEmployeeId?: number;
   buddyName?: string;
@@ -47,59 +50,71 @@ function computeStatus(tasks: OnboardingTask[]): OnboardingStatus {
   return 'IN_PROGRESS';
 }
 
-function seedRecords(): OnboardingRecord[] {
-  const tasksA = defaultTasks().map((t, i) => ({ ...t, done: i < 3 }));
-  return [
-    { id: 1, employeeName: 'Karan Malhotra', designation: 'Software Engineer', department: 'Engineering', joiningDate: '2026-09-01', buddyName: 'Ananya Rao', status: computeStatus(tasksA), tasks: tasksA },
-  ];
-}
+const EMPLOYMENT_TYPES: EmploymentType[] = ['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERN'];
 
-interface NewHireForm {
-  employeeName: string;
-  designation: string;
-  department: string;
-  joiningDate: string;
+interface OnboardForm extends EmployeeRequest {
   buddyEmployeeId: number | '';
 }
 
-function emptyForm(): NewHireForm {
-  return { employeeName: '', designation: '', department: '', joiningDate: '', buddyEmployeeId: '' };
+function emptyForm(): OnboardForm {
+  return {
+    employeeCode: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    dateOfJoining: new Date().toISOString().slice(0, 10),
+    employmentType: 'FULL_TIME',
+    buddyEmployeeId: '',
+  };
 }
 
 export function OnboardingPage() {
   const { t } = useLocale();
+  const queryClient = useQueryClient();
+  const fieldLabels = useFieldLabels('Employee');
   const { data: employees } = useQuery({ queryKey: ['employees', 'select'], queryFn: () => employeeApi.list(0, 200) });
-
-  const [records, setRecords] = useState<OnboardingRecord[]>(seedRecords());
+  const { data: designations } = useQuery({ queryKey: ['designations', 'select'], queryFn: () => designationApi.list(0, 200) });
+  const [records, setRecords] = useState<OnboardingRecord[]>([]);
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState<NewHireForm>(emptyForm());
+  const [form, setForm] = useState<OnboardForm>(emptyForm());
   const [viewing, setViewing] = useState<OnboardingRecord | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+
+  const selectedDesignation = designations?.content.find((d) => d.id === form.designationId);
 
   const closeCreate = () => {
     setShowCreate(false);
     setForm(emptyForm());
   };
 
-  const handleCreate = (event: FormEvent) => {
-    event.preventDefault();
-    const buddy = employees?.content.find((e) => e.id === form.buddyEmployeeId);
-    const tasks = defaultTasks();
-    setRecords((prev) => [
-      {
-        id: Date.now(),
-        employeeName: form.employeeName,
-        designation: form.designation,
-        department: form.department,
-        joiningDate: form.joiningDate,
+  const createEmployeeMutation = useMutation({
+    mutationFn: (request: EmployeeRequest) => employeeApi.create(request),
+    onSuccess: (employee: EmployeeResponse) => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      const buddy = employees?.content.find((e) => e.id === form.buddyEmployeeId);
+      const tasks = defaultTasks();
+      const record: OnboardingRecord = {
+        id: employee.id,
+        employeeId: employee.id,
+        employeeName: `${employee.firstName} ${employee.lastName}`,
+        designation: employee.designationTitle ?? '-',
+        joiningDate: employee.dateOfJoining,
         buddyEmployeeId: buddy?.id,
         buddyName: buddy ? `${buddy.firstName} ${buddy.lastName}` : undefined,
         status: computeStatus(tasks),
         tasks,
-      },
-      ...prev,
-    ]);
-    closeCreate();
+      };
+      setRecords((prev) => [record, ...prev]);
+      closeCreate();
+      setViewing(record);
+    },
+  });
+
+  const handleCreate = (event: FormEvent) => {
+    event.preventDefault();
+    const { buddyEmployeeId, ...employeeRequest } = form;
+    void buddyEmployeeId;
+    createEmployeeMutation.mutate(employeeRequest);
   };
 
   const toggleTask = (recordId: number, taskId: number) => {
@@ -155,17 +170,59 @@ export function OnboardingPage() {
       {showCreate && (
         <Modal title={t('pages.onboarding.addButton')} onClose={closeCreate}>
           <form onSubmit={handleCreate} className="form-grid">
-            <TextField label={t('fields.name')} value={form.employeeName} onChange={(e) => setForm({ ...form, employeeName: e.target.value })} required />
-            <TextField label={t('fields.designation')} value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} required />
-            <TextField label={t('fields.department')} value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
-            <div className="field">
-              <label className="field-label">{t('fields.dateOfJoining')}</label>
-              <input type="date" className="input" value={form.joiningDate} onChange={(e) => setForm({ ...form, joiningDate: e.target.value })} required />
-            </div>
+            {!fieldLabels.isHidden('employeeCode') && (
+              <TextField label={fieldLabels.label('employeeCode', t('fields.employeeCode'))} value={form.employeeCode}
+                onChange={(e) => setForm({ ...form, employeeCode: e.target.value })}
+                required={fieldLabels.isRequired('employeeCode', true)} readOnly={fieldLabels.isReadOnly('employeeCode')} />
+            )}
+            {!fieldLabels.isHidden('firstName') && (
+              <TextField label={fieldLabels.label('firstName', t('fields.firstName'))} value={form.firstName}
+                onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                required={fieldLabels.isRequired('firstName', true)} readOnly={fieldLabels.isReadOnly('firstName')} />
+            )}
+            {!fieldLabels.isHidden('lastName') && (
+              <TextField label={fieldLabels.label('lastName', t('fields.lastName'))} value={form.lastName}
+                onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                required={fieldLabels.isRequired('lastName', true)} readOnly={fieldLabels.isReadOnly('lastName')} />
+            )}
+            {!fieldLabels.isHidden('email') && (
+              <TextField label={fieldLabels.label('email', t('fields.email'))} type="email" value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                required={fieldLabels.isRequired('email', true)} readOnly={fieldLabels.isReadOnly('email')} />
+            )}
+            {!fieldLabels.isHidden('designation') && (
+              <SelectField label={fieldLabels.label('designation', t('fields.designation'))}
+                value={form.designationId ?? ''}
+                onChange={(e) => setForm({ ...form, designationId: e.target.value ? Number(e.target.value) : null })}>
+                <option value="">{t('common.none')}</option>
+                {designations?.content.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+              </SelectField>
+            )}
+            <TextField label={t('fields.grade')} value={selectedDesignation?.gradeName ?? t('common.none')} readOnly />
+            <SelectField label={t('fields.manager')} value={form.managerId ?? ''}
+              onChange={(e) => setForm({ ...form, managerId: e.target.value ? Number(e.target.value) : null })}>
+              <option value="">{t('common.none')}</option>
+              {employees?.content.map((e) => <option key={e.id} value={e.id}>{e.employeeCode} - {e.firstName} {e.lastName}</option>)}
+            </SelectField>
+            <SelectField label={t('fields.employmentType')} value={form.employmentType ?? 'FULL_TIME'}
+              onChange={(e) => setForm({ ...form, employmentType: e.target.value as EmploymentType })}>
+              {EMPLOYMENT_TYPES.map((type) => <option key={type} value={type}>{type.replace('_', ' ')}</option>)}
+            </SelectField>
+            {!fieldLabels.isHidden('dateOfJoining') && (
+              <TextField label={fieldLabels.label('dateOfJoining', t('fields.dateOfJoining'))} type="date" value={form.dateOfJoining}
+                onChange={(e) => setForm({ ...form, dateOfJoining: e.target.value })}
+                required={fieldLabels.isRequired('dateOfJoining', true)} readOnly={fieldLabels.isReadOnly('dateOfJoining')} />
+            )}
+            <TextField label={t('fields.pan')} value={form.pan ?? ''} onChange={(e) => setForm({ ...form, pan: e.target.value })} />
+            <TextField label={t('fields.uan')} value={form.uan ?? ''} onChange={(e) => setForm({ ...form, uan: e.target.value })} />
+            <TextField label={t('fields.linkedinUrl')} type="url" value={form.linkedinUrl ?? ''} onChange={(e) => setForm({ ...form, linkedinUrl: e.target.value })} />
+            <TextField label={t('fields.githubUrl')} type="url" value={form.githubUrl ?? ''} onChange={(e) => setForm({ ...form, githubUrl: e.target.value })} />
             <EmployeeSelect value={form.buddyEmployeeId} onChange={(id) => setForm({ ...form, buddyEmployeeId: id })} label={t('pages.onboarding.buddy')} />
-            <span className="field-hint" style={{ gridColumn: '1 / -1' }}>{t('pages.onboarding.mockNotice')}</span>
-            <div className="form-actions">
-              <Button type="submit">{t('common.create')}</Button>
+            <span className="field-hint" style={{ gridColumn: '1 / -1' }}>{t('pages.onboarding.buddyHint')}</span>
+            <div className="form-actions" style={{ gridColumn: '1 / -1' }}>
+              <Button type="submit" disabled={createEmployeeMutation.isPending}>
+                {createEmployeeMutation.isPending ? t('pages.onboarding.adding') : t('pages.onboarding.addButton')}
+              </Button>
               <Button type="button" variant="secondary" onClick={closeCreate}>{t('common.cancel')}</Button>
             </div>
           </form>

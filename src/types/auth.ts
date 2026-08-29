@@ -72,6 +72,17 @@ export interface AssignRolesRequest {
   roleIds: number[];
 }
 
+export interface CreateUserRequest {
+  email: string;
+  fullName?: string;
+  roleIds: number[];
+}
+
+export interface UserCreateResponse {
+  user: UserResponse;
+  temporaryPassword: string;
+}
+
 export interface UpdateTimezoneRequest {
   timezone: string | null;
 }

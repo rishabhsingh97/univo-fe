@@ -1,4 +1,31 @@
+import type { RequestStatus } from './finance';
+
 export type OrgUnitType = 'COMPANY' | 'BRANCH' | 'DEPARTMENT';
+
+export interface ReferralRequest {
+  jobPostingId: number;
+  candidateName: string;
+  candidateEmail: string;
+  candidatePhone?: string;
+  notes?: string;
+}
+
+export interface ReferralResponse {
+  id: number;
+  employeeId: number;
+  employeeName: string;
+  jobPostingId: number;
+  jobTitle: string;
+  candidateName: string;
+  candidateEmail: string;
+  candidatePhone: string | null;
+  notes: string | null;
+  status: RequestStatus;
+}
+
+export interface ReferralStatusUpdateRequest {
+  status: RequestStatus;
+}
 
 export interface OrgUnitRequest {
   name: string;

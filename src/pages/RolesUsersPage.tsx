@@ -6,10 +6,14 @@ import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
 import { Badge, Button, Modal, PagedDataTable, PillList, TextField, statusTone } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
-import type { RoleRequest, RoleResponse, UserResponse } from '../types/auth';
+import type { CreateUserRequest, RoleRequest, RoleResponse, UserCreateResponse, UserResponse } from '../types/auth';
 
 function emptyRoleForm(): RoleRequest {
   return { name: '', label: '', description: '', permissionIds: [] };
+}
+
+function emptyUserForm(): CreateUserRequest {
+  return { email: '', fullName: '', roleIds: [] };
 }
 
 function toggleId(ids: number[], id: number): number[] {
@@ -212,10 +216,14 @@ export function UsersManagementPage() {
 
   const [assigningUser, setAssigningUser] = useState<UserResponse | null>(null);
   const [assignRoleIds, setAssignRoleIds] = useState<number[]>([]);
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [createForm, setCreateForm] = useState<CreateUserRequest>(emptyUserForm());
+  const [createdUser, setCreatedUser] = useState<UserCreateResponse | null>(null);
 
   const canManageUsers = hasPermission('admin.user.manage');
 
-  // Every role, not just one page of it - the "assign roles to user" modal needs every option.
+  // Every role, not just one page of it - the "assign roles to user" and "create user" modals
+  // both need every option.
   const allRolesQuery = useQuery({ queryKey: ['roles', 'select'], queryFn: () => roleApi.list(0, 200) });
   const roles = allRolesQuery.data?.content ?? [];
 
@@ -226,6 +234,21 @@ export function UsersManagementPage() {
       setAssigningUser(null);
     },
   });
+
+  const createUserMutation = useMutation({
+    mutationFn: (request: CreateUserRequest) => userApi.create(request),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setShowCreateUser(false);
+      setCreateForm(emptyUserForm());
+      setCreatedUser(response);
+    },
+  });
+
+  const handleCreateUser = (event: FormEvent) => {
+    event.preventDefault();
+    createUserMutation.mutate(createForm);
+  };
 
   const openAssign = (user: UserResponse) => {
     setAssigningUser(user);
@@ -251,6 +274,12 @@ export function UsersManagementPage() {
 
   return (
     <div>
+      {canManageUsers && (
+        <div className="row-actions" style={{ justifyContent: 'flex-end', marginBottom: 16 }}>
+          <Button onClick={() => setShowCreateUser(true)}>{t('pages.accessManagement.addUser')}</Button>
+        </div>
+      )}
+
       <PagedDataTable
         columns={userColumns}
         queryKey={['users']}
@@ -258,6 +287,57 @@ export function UsersManagementPage() {
         getRowKey={(u) => u.id}
         onEdit={canManageUsers ? (u) => openAssign(u) : undefined}
       />
+
+      {showCreateUser && (
+        <Modal title={t('pages.accessManagement.createUser')} onClose={() => setShowCreateUser(false)}>
+          <form onSubmit={handleCreateUser} className="form-grid">
+            <TextField
+              label={t('fields.email')}
+              type="email"
+              value={createForm.email}
+              onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+              required
+            />
+            <TextField
+              label={t('fields.fullName')}
+              value={createForm.fullName ?? ''}
+              onChange={(e) => setCreateForm({ ...createForm, fullName: e.target.value })}
+            />
+            <div className="field">
+              <span className="field-label">{t('nav.roles')}</span>
+              <div className="checkbox-group">
+                {roles.map((r) => (
+                  <label key={r.id} className="checkbox-option">
+                    <input
+                      type="checkbox"
+                      checked={createForm.roleIds.includes(r.id)}
+                      onChange={() => setCreateForm({ ...createForm, roleIds: toggleId(createForm.roleIds, r.id) })}
+                    />
+                    {r.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="form-actions">
+              <Button type="submit" disabled={createUserMutation.isPending}>
+                {createUserMutation.isPending ? t('common.creating') : t('common.create')}
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setShowCreateUser(false)}>{t('common.cancel')}</Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {createdUser && (
+        <Modal title={t('pages.accessManagement.userCreated')} onClose={() => setCreatedUser(null)}>
+          <p>{t('pages.accessManagement.userCreatedHint')}</p>
+          <TextField label={t('fields.email')} value={createdUser.user.email} readOnly />
+          <TextField label={t('fields.temporaryPassword')} value={createdUser.temporaryPassword} readOnly />
+          <div className="form-actions">
+            <Button type="button" onClick={() => setCreatedUser(null)}>{t('common.close')}</Button>
+          </div>
+        </Modal>
+      )}
 
       {assigningUser && (
         <Modal title={`${t('pages.accessManagement.editRolesFor')} ${assigningUser.email}`} onClose={() => setAssigningUser(null)}>

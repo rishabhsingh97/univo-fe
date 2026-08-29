@@ -59,24 +59,23 @@ export function buildNavModules(t: T): NavModule[] {
       icon: IconPeople,
       groups: [
         {
-          label: 'Approvals',
-          items: [{ to: '/approvals', label: t('nav.approvals'), icon: IconCheck }],
-        },
-        {
-          label: 'Travel',
-          items: [{ to: '/travel', label: t('nav.travel'), icon: IconTravel }],
-        },
-        {
-          label: 'Tasks',
-          items: [{ to: '/tasks', label: t('nav.tasks'), icon: IconCheck }],
+          label: 'Workflow',
+          items: [
+            { to: '/approvals', label: t('nav.approvals'), icon: IconCheck },
+            { to: '/tasks', label: t('nav.tasks'), icon: IconCheck },
+          ],
         },
         {
           label: 'Services',
-          items: [{ to: '/services', label: t('nav.services'), icon: IconCheck }],
-        },
-        {
-          label: 'Onboarding',
-          items: [{ to: '/onboarding', label: t('nav.onboarding'), icon: IconCheck }],
+          // Merges the old standalone Travel and Documents groups in here too - all of these
+          // are the same "raise/submit something yourself, track it" self-service shape.
+          items: [
+            { to: '/services', label: t('nav.services'), icon: IconCheck },
+            { to: '/travel', label: t('nav.travel'), icon: IconTravel },
+            { to: '/files', label: t('nav.files'), icon: IconDocument },
+            { to: '/hr-letters', label: t('nav.hrLetters'), icon: IconFields },
+            { to: '/referrals', label: t('nav.referrals'), icon: IconCheck },
+          ],
         },
         {
           label: 'Workforce',
@@ -86,6 +85,16 @@ export function buildNavModules(t: T): NavModule[] {
             { to: '/designations', label: t('nav.designations'), icon: IconOrgUnits, anyOf: ['hr.designation.read'] },
             { to: '/grades', label: t('nav.grades'), icon: IconOrgUnits, anyOf: ['hr.grade.read'] },
             { to: '/locations', label: t('nav.locations'), icon: IconLocation, anyOf: ['hr.location.read'] },
+          ],
+        },
+        {
+          label: 'Lifecycle',
+          items: [
+            { to: '/onboarding', label: t('nav.onboarding'), icon: IconCheck, anyOf: ['hr.employee.read'] },
+            { to: '/career', label: t('nav.career'), icon: IconOrgUnits, anyOf: ['career.read'] },
+            { to: '/exit', label: t('nav.exit'), icon: IconPeople, anyOf: ['exit.read'] },
+            { to: '/full-final', label: t('nav.fullFinal'), icon: IconFinance, anyOf: ['fullfinal.read'] },
+            { to: '/retirement', label: t('nav.retirement'), icon: IconClock, anyOf: ['retirement.read'] },
           ],
         },
         {
@@ -132,9 +141,9 @@ export function buildNavModules(t: T): NavModule[] {
           ],
         },
         {
-          label: 'Payroll',
-          // No moduleKey override - payroll shares the "hr" tenant-module toggle now (see
-          // TenantModuleService.MODULE_KEYS on the backend), it isn't its own flag.
+          label: 'Finance',
+          // No moduleKey override - folded into the "hr" module's sidebar for now (payroll and
+          // finance both live here as one group, not their own module-switcher entries).
           items: [
             { to: '/payroll', label: t('nav.payroll'), icon: IconPayroll, anyOf: ['payroll.run.read'] },
             {
@@ -149,18 +158,11 @@ export function buildNavModules(t: T): NavModule[] {
               icon: IconSalary,
               anyOf: ['payroll.salarycomponent.read'],
             },
-          ],
-        },
-        {
-          label: 'Finance',
-          // No moduleKey override - folded into the "hr" module's sidebar for now (same
-          // treatment as Payroll above) rather than its own top-level module switcher entry.
-          items: [
             {
               to: '/finance',
               label: t('nav.finance'),
               icon: IconFinance,
-              anyOf: ['finance.loan.read', 'finance.reimbursement.read'],
+              anyOf: ['finance.reimbursement.read'],
             },
             { to: '/finance/tax-config', label: t('nav.taxConfig'), icon: IconTax, anyOf: ['finance.taxconfig.read'] },
             {
@@ -179,24 +181,8 @@ export function buildNavModules(t: T): NavModule[] {
           ],
         },
         {
-          label: 'Documents',
-          items: [
-            { to: '/files', label: t('nav.files'), icon: IconDocument },
-            { to: '/hr-letters', label: t('nav.hrLetters'), icon: IconFields },
-          ],
-        },
-        {
           label: 'Engagement',
           items: [{ to: '/engagement', label: t('nav.engagement'), icon: IconBell }],
-        },
-        {
-          label: 'Career & Exit',
-          items: [
-            { to: '/career', label: t('nav.career'), icon: IconOrgUnits, anyOf: ['career.read'] },
-            { to: '/exit', label: t('nav.exit'), icon: IconPeople, anyOf: ['exit.read'] },
-            { to: '/full-final', label: t('nav.fullFinal'), icon: IconFinance, anyOf: ['fullfinal.read'] },
-            { to: '/retirement', label: t('nav.retirement'), icon: IconClock, anyOf: ['retirement.read'] },
-          ],
         },
       ],
     },

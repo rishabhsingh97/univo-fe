@@ -15,6 +15,7 @@ function toForm(branding: TenantBrandingResponse | null): TenantBrandingRequest 
     fontFamily: branding?.fontFamily ?? '',
     primaryColor: branding?.primaryColor ?? '',
     secondaryColor: branding?.secondaryColor ?? '',
+    googleSignInEnabled: branding?.googleSignInEnabled ?? false,
   };
 }
 
@@ -113,6 +114,17 @@ export function BrandingPage() {
             value={form.secondaryColor || '#000000'}
             onChange={(e) => setForm({ ...form, secondaryColor: e.target.value })}
           />
+          <div className="field" style={{ gridColumn: '1 / -1' }}>
+            <label className="checkbox-option">
+              <input
+                type="checkbox"
+                checked={form.googleSignInEnabled ?? false}
+                onChange={(e) => setForm({ ...form, googleSignInEnabled: e.target.checked })}
+              />
+              {t('pages.branding.googleSignInEnabled')}
+            </label>
+            <span className="field-hint">{t('pages.branding.googleSignInEnabledHint')}</span>
+          </div>
           <div className="field" style={{ gridColumn: '1 / -1' }}>
             <label className="field-label" htmlFor="theme-vars">
               {t('fields.themeVars')}

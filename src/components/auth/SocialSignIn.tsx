@@ -12,27 +12,6 @@ function GoogleIcon() {
   );
 }
 
-function AppleIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 17 20" fill="currentColor" aria-hidden="true">
-      <path d="M14.1 10.6c0-2.03 1.66-3 1.73-3.05-.95-1.38-2.42-1.57-2.95-1.6-1.25-.12-2.45.74-3.08.74-.64 0-1.62-.72-2.66-.7-1.37.02-2.63.8-3.34 2.02-1.42 2.47-.36 6.13 1.03 8.14.67.97 1.47 2.07 2.53 2.03 1.01-.04 1.4-.66 2.63-.66 1.22 0 1.57.66 2.65.64 1.1-.02 1.79-1 2.46-1.98.77-1.14 1.09-2.24 1.1-2.3-.02-.01-2.1-.82-2.1-3.28z" />
-      <path d="M12.08 4.24c.56-.68.94-1.62.83-2.56-.81.03-1.78.54-2.36 1.21-.52.6-.97 1.56-.85 2.48.9.07 1.82-.46 2.38-1.13z" />
-    </svg>
-  );
-}
-
-function LinkedInIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-      <rect width="24" height="24" rx="4" fill="#0A66C2" />
-      <path
-        fill="#fff"
-        d="M7.2 9.6H4.4V19h2.8V9.6zM5.8 8.4c.95 0 1.55-.63 1.55-1.42C7.33 6.18 6.75 5.6 5.8 5.6c-.94 0-1.55.58-1.55 1.38 0 .79.6 1.42 1.53 1.42h.02zM19.6 19v-5.36c0-2.87-1.53-4.2-3.58-4.2-1.65 0-2.39.91-2.8 1.55V9.6H10.4c.04.78 0 9.4 0 9.4h2.82v-5.25c0-.28.02-.56.1-.76.23-.56.75-1.15 1.63-1.15 1.15 0 1.61.88 1.61 2.16V19h2.83z"
-      />
-    </svg>
-  );
-}
-
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 const GOOGLE_AUTH_BRIDGE_URL = import.meta.env.VITE_GOOGLE_AUTH_BRIDGE_URL as string | undefined;
 const MESSAGE_SOURCE = 'univo-google-bridge';
@@ -44,6 +23,11 @@ interface SocialSignInProps {
   /** Called with the tenant code as it was at the moment the visitor clicked the button, not
    * whatever it was when this component first mounted (see tenantCodeRef below). */
   onGoogleCredential: (idToken: string, tenantCode: string) => void;
+  /** This tenant's own googleSignInEnabled branding switch - defaults to true so any other
+   * caller that doesn't pass it keeps today's behavior. AuthService.loginWithGoogle enforces
+   * this server-side regardless; gating it here too avoids showing a button that would always
+   * fail for a tenant that hasn't turned Google sign-in on. */
+  googleEnabled?: boolean;
 }
 
 /** Never talks to Google directly - Google's OAuth console has no wildcard support for
@@ -52,10 +36,8 @@ interface SocialSignInProps {
  * GoogleAuthBridgePage in a popup on the one fixed, permanently-registered bridge origin
  * (VITE_GOOGLE_AUTH_BRIDGE_URL); the bridge does the actual Google sign-in and relays the
  * resulting ID token back here via postMessage. Google is fully wired once both
- * VITE_GOOGLE_CLIENT_ID and VITE_GOOGLE_AUTH_BRIDGE_URL are set. Apple and LinkedIn are shown so
- * people know they're coming, but stay disabled until their own backend flows exist - a button
- * that looks clickable but silently fails is worse than one that's honestly off. */
-export function SocialSignIn({ tenantCode, onGoogleCredential }: SocialSignInProps) {
+ * VITE_GOOGLE_CLIENT_ID and VITE_GOOGLE_AUTH_BRIDGE_URL are set. */
+export function SocialSignIn({ tenantCode, onGoogleCredential, googleEnabled = true }: SocialSignInProps) {
   const [opening, setOpening] = useState(false);
   const [popupBlocked, setPopupBlocked] = useState(false);
   const pollTimerRef = useRef<number | undefined>(undefined);
@@ -114,7 +96,7 @@ export function SocialSignIn({ tenantCode, onGoogleCredential }: SocialSignInPro
     alignItems: 'center',
     justifyContent: 'center',
   };
-  const googleConfigured = Boolean(GOOGLE_CLIENT_ID && GOOGLE_AUTH_BRIDGE_URL);
+  const googleConfigured = Boolean(GOOGLE_CLIENT_ID && GOOGLE_AUTH_BRIDGE_URL) && googleEnabled;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
@@ -139,16 +121,6 @@ export function SocialSignIn({ tenantCode, onGoogleCredential }: SocialSignInPro
             </Button>
           </span>
         )}
-        <span title="Continue with Apple · Coming soon">
-          <Button type="button" variant="secondary" disabled aria-label="Continue with Apple" style={iconButtonStyle}>
-            <AppleIcon />
-          </Button>
-        </span>
-        <span title="Continue with LinkedIn · Coming soon">
-          <Button type="button" variant="secondary" disabled aria-label="Continue with LinkedIn" style={iconButtonStyle}>
-            <LinkedInIcon />
-          </Button>
-        </span>
       </div>
       {popupBlocked && (
         <div style={{ color: 'var(--color-danger)', fontSize: 13 }}>

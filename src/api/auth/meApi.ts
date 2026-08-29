@@ -14,6 +14,9 @@ export const meApi = {
   changePassword: (request: ChangePasswordRequest) =>
     apiClient.post<void>('/api/me/change-password', request).then(() => undefined),
 
+  connectGoogle: (idToken: string) =>
+    apiClient.post<UserResponse>('/api/me/google/connect', { idToken }).then((res) => res.data),
+
   uploadAvatar: (file: File) => {
     const form = new FormData();
     form.append('file', file);

@@ -1,11 +1,75 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { meApi } from '../api/auth/meApi';
 import { useAuth } from '../context/AuthContext';
+import { useBranding } from '../context/BrandingContext';
 import { useLocale } from '../context/LocaleContext';
 import { Button, Card, Modal, PageHeader, PillList, TextField } from '../components/ui';
 import type { UpdateProfileRequest } from '../types/auth';
 import type { EmployeeLinkRequest, EmployeeLinkResponse } from '../types/hr';
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+const GOOGLE_AUTH_BRIDGE_URL = import.meta.env.VITE_GOOGLE_AUTH_BRIDGE_URL as string | undefined;
+const MESSAGE_SOURCE = 'univo-google-bridge';
+
+/** Same popup-bridge mechanism as SocialSignIn.tsx (see that file's own comment for why it's a
+ * popup on a fixed origin rather than calling Google directly) - duplicated here in miniature
+ * rather than reused, since this button has none of SocialSignIn's tenant-code gating or
+ * Apple/LinkedIn placeholder icons, which would look out of place on this page. */
+function ConnectGoogleButton({ onCredential }: { onCredential: (idToken: string) => void }) {
+  const { t } = useLocale();
+  const [opening, setOpening] = useState(false);
+  const [popupBlocked, setPopupBlocked] = useState(false);
+  const pollTimerRef = useRef<number | undefined>(undefined);
+  const onCredentialRef = useRef(onCredential);
+  onCredentialRef.current = onCredential;
+
+  useEffect(() => {
+    if (!GOOGLE_AUTH_BRIDGE_URL) return;
+    const bridgeOrigin = new URL(GOOGLE_AUTH_BRIDGE_URL).origin;
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== bridgeOrigin) return;
+      const data = event.data as { source?: string; idToken?: string } | null;
+      if (!data || data.source !== MESSAGE_SOURCE || typeof data.idToken !== 'string') return;
+      window.clearInterval(pollTimerRef.current);
+      setOpening(false);
+      onCredentialRef.current(data.idToken);
+    };
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.clearInterval(pollTimerRef.current);
+    };
+  }, []);
+
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_AUTH_BRIDGE_URL) return null;
+
+  const open = () => {
+    setPopupBlocked(false);
+    const url = `${GOOGLE_AUTH_BRIDGE_URL}?returnOrigin=${encodeURIComponent(window.location.origin)}`;
+    const popup = window.open(url, 'univo-google-auth', 'width=480,height=600');
+    if (!popup) {
+      setPopupBlocked(true);
+      return;
+    }
+    setOpening(true);
+    pollTimerRef.current = window.setInterval(() => {
+      if (popup.closed) {
+        window.clearInterval(pollTimerRef.current);
+        setOpening(false);
+      }
+    }, 500);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <Button type="button" variant="secondary" disabled={opening} onClick={open}>
+        {t('pages.myDetails.connectGoogle')}
+      </Button>
+      {popupBlocked && <span style={{ color: 'var(--color-danger)', fontSize: 13 }}>{t('pages.myDetails.popupBlocked')}</span>}
+    </div>
+  );
+}
 
 /**
  * Now backed by GET /api/me instead of just the session - this page's own comment used to say
@@ -16,6 +80,7 @@ import type { EmployeeLinkRequest, EmployeeLinkResponse } from '../types/hr';
 export function MyDetailsPage() {
   const { t } = useLocale();
   const { session } = useAuth();
+  const { branding } = useBranding();
   const queryClient = useQueryClient();
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: meApi.get });
@@ -42,6 +107,11 @@ export function MyDetailsPage() {
   }, [me?.hasAvatar]);
 
   const invalidateMe = () => queryClient.invalidateQueries({ queryKey: ['me'] });
+
+  const connectGoogleMutation = useMutation({
+    mutationFn: (idToken: string) => meApi.connectGoogle(idToken),
+    onSuccess: invalidateMe,
+  });
 
   const uploadAvatarMutation = useMutation({
     mutationFn: (file: File) => meApi.uploadAvatar(file),
@@ -158,6 +228,21 @@ export function MyDetailsPage() {
             <dt>{t('fields.bio')}</dt>
             <dd>{me?.bio ?? '-'}</dd>
           </div>
+          {branding?.googleSignInEnabled && (
+            <div className="detail-row">
+              <dt>{t('pages.myDetails.googleAccount')}</dt>
+              <dd>
+                {me?.googleConnected ? (
+                  t('pages.myDetails.googleConnected')
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span>{t('pages.myDetails.googleNotConnected')}</span>
+                    <ConnectGoogleButton onCredential={(idToken) => connectGoogleMutation.mutate(idToken)} />
+                  </div>
+                )}
+              </dd>
+            </div>
+          )}
         </dl>
       </Card>
 

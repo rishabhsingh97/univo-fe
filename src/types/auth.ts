@@ -66,6 +66,7 @@ export interface UserResponse {
   bloodGroup: string | null;
   phoneNumber: string | null;
   bio: string | null;
+  googleConnected: boolean;
 }
 
 export interface AssignRolesRequest {

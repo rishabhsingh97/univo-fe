@@ -121,7 +121,7 @@ export function LoginPage() {
       <div className="auth-divider">
         <span>{t('login.orContinueWith')}</span>
       </div>
-      <SocialSignIn tenantCode={tenantCode} onGoogleCredential={handleGoogleCredential} />
+      <SocialSignIn tenantCode={tenantCode} onGoogleCredential={handleGoogleCredential} googleEnabled={branding?.googleSignInEnabled ?? false} />
 
       <div className="auth-links">
         <Link to="/signup">{t('login.signupLink')}</Link>

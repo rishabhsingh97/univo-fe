@@ -14,6 +14,9 @@ export interface TenantBrandingResponse {
    * must be custom-property names (start with "--"); anything else is ignored client-side.
    */
   themeVars?: Record<string, string> | null;
+  /** Master switch for the whole workspace - gates both the Google button on the login page and
+   * My Details' "Connect Google Account" action. */
+  googleSignInEnabled?: boolean | null;
 }
 
 export interface TenantBrandingRequest {
@@ -25,4 +28,5 @@ export interface TenantBrandingRequest {
   fontFamily?: string;
   defaultTimezone?: string;
   themeVars?: Record<string, string>;
+  googleSignInEnabled?: boolean;
 }

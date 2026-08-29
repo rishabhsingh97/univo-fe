@@ -558,6 +558,8 @@ const en = {
       resetting: 'Resetting...',
       resetDone: 'Branding reset to default.',
       confirmReset: 'Reset branding to the default logo, colors, and fonts? This clears all customization for this tenant.',
+      googleSignInEnabled: 'Enable Google sign-in',
+      googleSignInEnabledHint: 'Lets people sign in with Google once they connect their account from My Details - off by default.',
     },
     domains: {
       title: 'Domains',
@@ -612,6 +614,12 @@ const en = {
       addLink: 'Add link',
       editLink: 'Edit link',
       noLinks: 'No links added yet.',
+      googleAccount: 'Google account',
+      googleConnected: 'Connected',
+      googleNotConnected: 'Not connected',
+      connectGoogle: 'Connect Google Account',
+      googleNotAvailable: 'Google sign-in is not enabled for this workspace.',
+      popupBlocked: 'Your browser blocked the sign-in popup. Allow popups for this site and try again.',
     },
     changePassword: {
       title: 'Change Password',

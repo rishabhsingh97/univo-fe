@@ -388,8 +388,8 @@
 /* Bold + full-strength text only - no background fill, so the parent group reads as
    emphasized without competing with .nav-sublink.active's own tint on the actual active leaf. */
 .nav-group summary.active {
-  color: var(--color-text);
-  font-weight: 600;
+  color: var(--color-primary);
+  font-weight: 900;
 }
 
 /* Indent without the vertical guide line: at this density the line plus a dot per row was two

@@ -118,6 +118,7 @@ export function EmployeesPage() {
       ),
       sortKey: 'firstName',
       filter: { type: 'text', paramKey: 'name', placeholder: t('table.filterNameEmail') },
+      hideable: false,
     },
     {
       key: 'designation',

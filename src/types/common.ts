@@ -9,6 +9,13 @@ export interface PageResponse<T> {
   last: boolean;
 }
 
+/** Either half is null when no row exists yet for that scope - see tableViewApi/DataTable's
+ * `viewKey`. Effective visible columns are `userColumns ?? defaultColumns ?? (all columns)`. */
+export interface TableViewPreferenceResponse {
+  defaultColumns: string[] | null;
+  userColumns: string[] | null;
+}
+
 export interface ErrorResponse {
   timestamp: string;
   status: number;

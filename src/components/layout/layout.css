@@ -100,8 +100,8 @@
 }
 
 .sidebar-link:hover {
-  background: var(--color-surface-alt);
-  color: var(--color-text);
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 /* Light tint rather than a solid fill - in a 14-group nav the active top-level link shouldn't
@@ -375,14 +375,13 @@
 }
 
 .nav-group summary:hover {
-  background: var(--color-surface-alt);
-  color: var(--color-text);
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
-/* The group containing the active page reads as bolder only - no background/color fill, so it
-   doesn't compete with .nav-sublink.active's own tint on the actual active leaf below it. */
 .nav-group summary.active {
-  font-weight: 600;
+  color: var(--color-primary);
+  font-weight: 900;
 }
 
 .nav-group summary .chevron {

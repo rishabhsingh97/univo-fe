@@ -1,28 +1,43 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { orgUnitApi } from '../api/hr/orgUnitApi';
+import { branchApi } from '../api/hr/branchApi';
+import { departmentApi } from '../api/hr/departmentApi';
+import { locationApi } from '../api/hr/locationApi';
 import { employeeApi } from '../api/hr/employeeApi';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
-import { Button, DataTable, Modal, PageHeader, SelectField, Spinner, TextField } from '../components/ui';
+import { Badge, Button, DataTable, Modal, PageHeader, PillList, SelectField, Spinner, TextField } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
-import type { EmployeeResponse, OrgUnitRequest, OrgUnitResponse, OrgUnitType } from '../types/hr';
+import type { EmployeeResponse } from '../types/hr';
+import type { BranchRequest, BranchResponse, DepartmentRequest, DepartmentResponse } from '../types/orgStructure';
 import './orgUnits.css';
 import './orgChart.css';
 
-const ORG_UNIT_TYPES: OrgUnitType[] = ['COMPANY', 'BRANCH', 'DEPARTMENT'];
-type ActiveTab = OrgUnitType | 'CHART';
+type OrgTab = 'BRANCH' | 'DEPARTMENT';
+type ActiveTab = OrgTab | 'CHART';
 
-function CompanyIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M9 21V9h6v12" />
-      <path d="M9 13h.01M9 17h.01M15 13h.01M15 17h.01" />
-    </svg>
-  );
-}
+const TABS: OrgTab[] = ['BRANCH', 'DEPARTMENT'];
+
+const TYPE_LABEL: Record<OrgTab, string> = {
+  BRANCH: 'Branches',
+  DEPARTMENT: 'Departments',
+};
+
+const TYPE_LABEL_SINGULAR: Record<OrgTab, string> = {
+  BRANCH: 'Branch',
+  DEPARTMENT: 'Department',
+};
+
+// Branch and Department each belong to the tenant's single Company internally (see
+// Organization Settings for that record) - it's not a user-facing picker here. Department
+// additionally tags any number of Branches (which branch(es) run it), rather than being a
+// strict child of one, since the same department can be shared across branches. See the
+// backend's Department/Branch entities for the same reasoning.
+const PERMISSION_PREFIX: Record<OrgTab, string> = {
+  BRANCH: 'branch',
+  DEPARTMENT: 'department',
+};
 
 function BranchIcon() {
   return (
@@ -41,39 +56,21 @@ function DepartmentIcon() {
   );
 }
 
-function ChartIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="5" r="2.5" />
-      <circle cx="5" cy="19" r="2.5" />
-      <circle cx="19" cy="19" r="2.5" />
-      <path d="M12 7.5v5M12 12.5 6.6 17M12 12.5l5.4 4.5" />
-    </svg>
-  );
-}
-
-const TYPE_ICON: Record<OrgUnitType, ReactNode> = {
-  COMPANY: <CompanyIcon />,
+const TYPE_ICON: Record<OrgTab, ReactNode> = {
   BRANCH: <BranchIcon />,
   DEPARTMENT: <DepartmentIcon />,
 };
 
-const TYPE_LABEL: Record<OrgUnitType, string> = {
-  COMPANY: 'Companies',
-  BRANCH: 'Branches',
-  DEPARTMENT: 'Departments',
-};
-
-function emptyForm(type: OrgUnitType): OrgUnitRequest {
-  return { name: '', code: '', type, parentId: null };
+function emptyBranchForm(locationId: number | null): BranchRequest {
+  return { name: '', code: '', locationId, headquarters: false };
 }
 
-/**
- * One node of the reporting-line chart. Its own direct reports are only fetched once expanded
- * (react-query's `enabled` gate) - the chart never loads more of the org than what's currently
- * visible on screen, so it scales to a tenant with thousands of employees the same way it does
- * to one with a handful.
- */
+function emptyDepartmentForm(): DepartmentRequest {
+  return { name: '', code: '', branchIds: [] };
+}
+
+/** One node of the reporting-line chart - unchanged from before the org-units split, this tab
+ * has nothing to do with the Branch/Department hierarchy above. */
 function OrgChartNode({ employee, onNavigate }: { employee: EmployeeResponse; onNavigate: (id: number) => void }) {
   const { t } = useLocale();
   const [expanded, setExpanded] = useState(false);
@@ -114,9 +111,6 @@ function OrgChartNode({ employee, onNavigate }: { employee: EmployeeResponse; on
   );
 }
 
-/** The reporting-line visualization, shown as the "Org Chart" tab - lives here instead of its
- * own sidebar entry since it's really just another view over the same org data. Starts from
- * the (usually few) employees with no manager; everything below a node loads lazily on expand. */
 function OrgChartTab() {
   const { t } = useLocale();
   const navigate = useNavigate();
@@ -145,76 +139,101 @@ export function OrgUnitsPage() {
   const { t } = useLocale();
   const { hasPermission } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<ActiveTab>('COMPANY');
-  const [form, setForm] = useState<OrgUnitRequest>(emptyForm('COMPANY'));
-  const [editing, setEditing] = useState<OrgUnitResponse | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('BRANCH');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [branchForm, setBranchForm] = useState<BranchRequest>(emptyBranchForm(null));
+  const [departmentForm, setDepartmentForm] = useState<DepartmentRequest>(emptyDepartmentForm());
+
+  const [editingBranch, setEditingBranch] = useState<BranchResponse | null>(null);
+  const [editingDepartment, setEditingDepartment] = useState<DepartmentResponse | null>(null);
+
+  const [viewing, setViewing] = useState<
+    | { tab: 'BRANCH'; data: BranchResponse }
+    | { tab: 'DEPARTMENT'; data: DepartmentResponse }
+    | null
+  >(null);
 
   const changeTab = (tab: ActiveTab) => {
     setActiveTab(tab);
     setPage(0);
   };
 
-  const canWrite = hasPermission('hr.orgunit.write');
-  const canDelete = hasPermission('hr.orgunit.delete');
+  const isChart = activeTab === 'CHART';
+  const orgTab: OrgTab | null = isChart ? null : (activeTab as OrgTab);
+  const canWrite = orgTab !== null && hasPermission(`hr.${PERMISSION_PREFIX[orgTab]}.write`);
+  const canDelete = orgTab !== null && hasPermission(`hr.${PERMISSION_PREFIX[orgTab]}.delete`);
 
-  // The whole set, unpaginated - each tab's table is a client-side filter over this, and the
-  // parent pickers below need every unit regardless of which tab is active.
-  const { data: allOrgUnits, isLoading } = useQuery({ queryKey: ['org-units', 'select'], queryFn: () => orgUnitApi.list(0, 200) });
-  const units = allOrgUnits?.content ?? [];
-  const parentOptions = units;
-  const unitsForActiveTab = activeTab === 'CHART' ? [] : units.filter((u) => u.type === activeTab);
-  const totalElements = unitsForActiveTab.length;
-  const totalPages = Math.max(Math.ceil(totalElements / pageSize), 1);
-  const pageRows = unitsForActiveTab.slice(page * pageSize, page * pageSize + pageSize);
+  // Unpaginated - every tab's pickers (Branch's Location picker, Department's Branch tags) need
+  // the full set regardless of which tab is active.
+  const { data: locationsPage, isLoading: locationsLoading } = useQuery({ queryKey: ['locations', 'select'], queryFn: () => locationApi.list(0, 200) });
+  const { data: branchesPage, isLoading: branchesLoading } = useQuery({ queryKey: ['branches', 'select'], queryFn: () => branchApi.list(0, 200) });
+  const { data: departmentsPage, isLoading: departmentsLoading } = useQuery({ queryKey: ['departments', 'select'], queryFn: () => departmentApi.list(0, 200) });
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['org-units'] });
+  const locations = locationsPage?.content ?? [];
+  const branches = branchesPage?.content ?? [];
+  const departments = departmentsPage?.content ?? [];
 
-  const createMutation = useMutation({
-    mutationFn: (request: OrgUnitRequest) => orgUnitApi.create(request),
-    onSuccess: () => {
-      invalidate();
-      setForm(emptyForm(activeTab === 'CHART' ? 'COMPANY' : activeTab));
-      setShowCreate(false);
-    },
+  const isLoading = locationsLoading || branchesLoading || departmentsLoading;
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['branches'] });
+    queryClient.invalidateQueries({ queryKey: ['departments'] });
+  };
+
+  const createBranchMutation = useMutation({
+    mutationFn: (request: BranchRequest) => branchApi.create(request),
+    onSuccess: () => { invalidateAll(); setBranchForm(emptyBranchForm(locations[0]?.id ?? null)); setShowCreate(false); },
+  });
+  const createDepartmentMutation = useMutation({
+    mutationFn: (request: DepartmentRequest) => departmentApi.create(request),
+    onSuccess: () => { invalidateAll(); setDepartmentForm(emptyDepartmentForm()); setShowCreate(false); },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, request }: { id: number; request: OrgUnitRequest }) => orgUnitApi.update(id, request),
-    onSuccess: () => {
-      invalidate();
-      setEditing(null);
-    },
+  const updateBranchMutation = useMutation({
+    mutationFn: ({ id, request }: { id: number; request: BranchRequest }) => branchApi.update(id, request),
+    onSuccess: () => { invalidateAll(); setEditingBranch(null); },
+  });
+  const updateDepartmentMutation = useMutation({
+    mutationFn: ({ id, request }: { id: number; request: DepartmentRequest }) => departmentApi.update(id, request),
+    onSuccess: () => { invalidateAll(); setEditingDepartment(null); },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => orgUnitApi.delete(id),
-    onSuccess: invalidate,
-  });
+  const deleteBranchMutation = useMutation({ mutationFn: (id: number) => branchApi.delete(id), onSuccess: invalidateAll });
+  const deleteDepartmentMutation = useMutation({ mutationFn: (id: number) => departmentApi.delete(id), onSuccess: invalidateAll });
+
+  const openCreate = () => {
+    if (activeTab === 'BRANCH') setBranchForm(emptyBranchForm(locations[0]?.id ?? null));
+    if (activeTab === 'DEPARTMENT') setDepartmentForm(emptyDepartmentForm());
+    setShowCreate(true);
+  };
 
   const handleCreate = (event: FormEvent) => {
     event.preventDefault();
-    createMutation.mutate(form);
+    if (activeTab === 'BRANCH') createBranchMutation.mutate(branchForm);
+    if (activeTab === 'DEPARTMENT') createDepartmentMutation.mutate(departmentForm);
   };
 
-  const handleUpdate = (event: FormEvent) => {
-    event.preventDefault();
-    if (!editing) return;
-    updateMutation.mutate({
-      id: editing.id,
-      request: { name: editing.name, code: editing.code, type: editing.type, parentId: editing.parentId },
-    });
+  const toggleBranchTag = (form: DepartmentRequest, setForm: (next: DepartmentRequest) => void, branchId: number) => {
+    const current = form.branchIds ?? [];
+    const next = current.includes(branchId) ? current.filter((id) => id !== branchId) : [...current, branchId];
+    setForm({ ...form, branchIds: next });
   };
 
-  const columns: DataTableColumn<OrgUnitResponse>[] = [
+  const rows: (BranchResponse | DepartmentResponse)[] = activeTab === 'BRANCH' ? branches : activeTab === 'DEPARTMENT' ? departments : [];
+  const totalElements = rows.length;
+  const totalPages = Math.max(Math.ceil(totalElements / pageSize), 1);
+  const pageRows = rows.slice(page * pageSize, page * pageSize + pageSize);
+
+  const branchColumns: DataTableColumn<BranchResponse>[] = [
     {
       key: 'name',
       header: t('fields.name'),
       render: (unit) => (
         <div className="org-tree-row">
-          <span className={`org-tree-icon org-tree-icon-${unit.type.toLowerCase()}`}>{TYPE_ICON[unit.type]}</span>
+          <span className="org-tree-icon org-tree-icon-branch">{TYPE_ICON.BRANCH}</span>
           <div className="table-cell-stack">
             <span>{unit.name}</span>
             <span className="table-cell-stack-secondary">{unit.code}</span>
@@ -223,9 +242,30 @@ export function OrgUnitsPage() {
       ),
       sortKey: 'name',
     },
-    ...(activeTab === 'COMPANY' || activeTab === 'CHART'
-      ? []
-      : [{ key: 'parent', header: t('fields.parent'), render: (unit: OrgUnitResponse) => unit.parentName ?? '-' }]),
+    { key: 'location', header: t('fields.location'), render: (unit) => unit.locationName },
+    {
+      key: 'headquarters',
+      header: t('fields.headquarters'),
+      render: (unit) => (unit.headquarters ? <Badge tone="success">{t('fields.headquarters')}</Badge> : null),
+    },
+  ];
+
+  const departmentColumns: DataTableColumn<DepartmentResponse>[] = [
+    {
+      key: 'name',
+      header: t('fields.name'),
+      render: (unit) => (
+        <div className="org-tree-row">
+          <span className="org-tree-icon org-tree-icon-department">{TYPE_ICON.DEPARTMENT}</span>
+          <div className="table-cell-stack">
+            <span>{unit.name}</span>
+            <span className="table-cell-stack-secondary">{unit.code}</span>
+          </div>
+        </div>
+      ),
+      sortKey: 'name',
+    },
+    { key: 'branches', header: t('fields.branches'), render: (unit) => <PillList items={unit.branchNames} /> },
   ];
 
   return (
@@ -234,23 +274,24 @@ export function OrgUnitsPage() {
         title={t('pages.orgUnits.title')}
         description={t('pages.orgUnits.description')}
         actions={
-          canWrite && activeTab !== 'CHART' ? (
-            <Button onClick={() => { setForm(emptyForm(activeTab)); setShowCreate(true); }}>{t('pages.orgUnits.addButton')}</Button>
+          canWrite && orgTab !== null ? (
+            <Button onClick={openCreate}>
+              {t('pages.orgUnits.addButton')} {TYPE_LABEL_SINGULAR[orgTab]}
+            </Button>
           ) : undefined
         }
       />
 
       <div className="org-tabs">
-        {ORG_UNIT_TYPES.map((type) => (
+        {TABS.map((type) => (
           <button
             key={type}
             type="button"
             className={`org-tab${activeTab === type ? ' active' : ''}`}
             onClick={() => changeTab(type)}
           >
-            <span className={`org-tree-icon org-tree-icon-${type.toLowerCase()}`}>{TYPE_ICON[type]}</span>
             {TYPE_LABEL[type]}
-            <span className="org-tab-count">{units.filter((u) => u.type === type).length}</span>
+            <span className="org-tab-count">{type === 'BRANCH' ? branches.length : departments.length}</span>
           </button>
         ))}
         <button
@@ -258,30 +299,52 @@ export function OrgUnitsPage() {
           className={`org-tab${activeTab === 'CHART' ? ' active' : ''}`}
           onClick={() => changeTab('CHART')}
         >
-          <span className="org-tree-icon org-tree-icon-chart"><ChartIcon /></span>
           {t('pages.orgChart.title')}
         </button>
       </div>
 
       {showCreate && (
-        <Modal title={t('pages.orgUnits.createTitle')} onClose={() => setShowCreate(false)}>
+        <Modal title={`${t('pages.orgUnits.createTitle')} ${orgTab === null ? '' : TYPE_LABEL_SINGULAR[orgTab]}`} onClose={() => setShowCreate(false)}>
           <form onSubmit={handleCreate} className="form-grid">
-            <TextField label={t('fields.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-            <TextField label={t('fields.code')} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} required />
-            <SelectField label={t('fields.type')} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as OrgUnitType })}>
-              {ORG_UNIT_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
-            </SelectField>
-            <SelectField
-              label={t('fields.parent')}
-              value={form.parentId ?? ''}
-              onChange={(e) => setForm({ ...form, parentId: e.target.value ? Number(e.target.value) : null })}
-            >
-              <option value="">{t('pages.orgUnits.noParent')}</option>
-              {parentOptions.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-            </SelectField>
+            {activeTab === 'BRANCH' && (
+              <>
+                <TextField label={t('fields.name')} value={branchForm.name} onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })} required />
+                <TextField label={t('fields.code')} value={branchForm.code} onChange={(e) => setBranchForm({ ...branchForm, code: e.target.value })} required />
+                <SelectField label={t('fields.location')} value={branchForm.locationId ?? ''} onChange={(e) => setBranchForm({ ...branchForm, locationId: e.target.value ? Number(e.target.value) : null })} required>
+                  <option value="" disabled>{t('common.selectOption')}</option>
+                  {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </SelectField>
+                <label className="checkbox-option">
+                  <input type="checkbox" checked={branchForm.headquarters} onChange={(e) => setBranchForm({ ...branchForm, headquarters: e.target.checked })} />
+                  {t('fields.headquarters')}
+                </label>
+              </>
+            )}
+            {activeTab === 'DEPARTMENT' && (
+              <>
+                <TextField label={t('fields.name')} value={departmentForm.name} onChange={(e) => setDepartmentForm({ ...departmentForm, name: e.target.value })} required />
+                <TextField label={t('fields.code')} value={departmentForm.code} onChange={(e) => setDepartmentForm({ ...departmentForm, code: e.target.value })} required />
+                <div className="field">
+                  <span className="field-label">{t('fields.branches')}</span>
+                  {branches.map((b) => (
+                    <label key={b.id} className="checkbox-option">
+                      <input
+                        type="checkbox"
+                        checked={(departmentForm.branchIds ?? []).includes(b.id)}
+                        onChange={() => toggleBranchTag(departmentForm, setDepartmentForm, b.id)}
+                      />
+                      {b.name}
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
             <div className="form-actions">
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? t('common.creating') : t('common.create')}
+              <Button
+                type="submit"
+                disabled={createBranchMutation.isPending || createDepartmentMutation.isPending}
+              >
+                {t('common.create')}
               </Button>
               <Button type="button" variant="secondary" onClick={() => setShowCreate(false)}>{t('common.cancel')}</Button>
             </div>
@@ -291,49 +354,120 @@ export function OrgUnitsPage() {
 
       {activeTab === 'CHART' ? (
         <OrgChartTab />
-      ) : (
+      ) : activeTab === 'BRANCH' ? (
         <DataTable
-          columns={columns}
-          rows={pageRows}
+          columns={branchColumns}
+          rows={pageRows as BranchResponse[]}
           isLoading={isLoading}
           getRowKey={(u) => u.id}
           maxHeight="70vh"
-          onEdit={canWrite ? (u) => setEditing(u) : undefined}
-          onDelete={canDelete ? (u) => deleteMutation.mutate(u.id) : undefined}
-          pagination={{
-            page,
-            size: pageSize,
-            totalPages,
-            totalElements,
-            onPageChange: setPage,
-            onSizeChange: (size) => { setPageSize(size); setPage(0); },
-          }}
+          viewKey="org-units"
+          onView={(u) => setViewing({ tab: 'BRANCH', data: u })}
+          onEdit={canWrite ? (u) => setEditingBranch(u) : undefined}
+          onDelete={canDelete ? (u) => deleteBranchMutation.mutate(u.id) : undefined}
+          pagination={{ page, size: pageSize, totalPages, totalElements, onPageChange: setPage, onSizeChange: (size) => { setPageSize(size); setPage(0); } }}
+        />
+      ) : (
+        <DataTable
+          columns={departmentColumns}
+          rows={pageRows as DepartmentResponse[]}
+          isLoading={isLoading}
+          getRowKey={(u) => u.id}
+          maxHeight="70vh"
+          viewKey="org-units"
+          onView={(u) => setViewing({ tab: 'DEPARTMENT', data: u })}
+          onEdit={canWrite ? (u) => setEditingDepartment(u) : undefined}
+          onDelete={canDelete ? (u) => deleteDepartmentMutation.mutate(u.id) : undefined}
+          pagination={{ page, size: pageSize, totalPages, totalElements, onPageChange: setPage, onSizeChange: (size) => { setPageSize(size); setPage(0); } }}
         />
       )}
 
-      {editing && (
-        <Modal title={t('pages.orgUnits.editTitle')} onClose={() => setEditing(null)}>
-          <form onSubmit={handleUpdate} className="form-grid">
-            <TextField label={t('fields.name')} value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} required />
-            <TextField label={t('fields.code')} value={editing.code} onChange={(e) => setEditing({ ...editing, code: e.target.value })} required />
-            <SelectField label={t('fields.type')} value={editing.type} onChange={(e) => setEditing({ ...editing, type: e.target.value as OrgUnitType })}>
-              {ORG_UNIT_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+      {editingBranch && (
+        <Modal title={`${t('pages.orgUnits.editTitle')} ${TYPE_LABEL_SINGULAR.BRANCH}`} onClose={() => setEditingBranch(null)}>
+          <form
+            onSubmit={(event: FormEvent) => {
+              event.preventDefault();
+              updateBranchMutation.mutate({
+                id: editingBranch.id,
+                request: { name: editingBranch.name, code: editingBranch.code, locationId: editingBranch.locationId, headquarters: editingBranch.headquarters },
+              });
+            }}
+            className="form-grid"
+          >
+            <TextField label={t('fields.name')} value={editingBranch.name} onChange={(e) => setEditingBranch({ ...editingBranch, name: e.target.value })} required />
+            <TextField label={t('fields.code')} value={editingBranch.code} onChange={(e) => setEditingBranch({ ...editingBranch, code: e.target.value })} required />
+            <SelectField label={t('fields.location')} value={editingBranch.locationId} onChange={(e) => setEditingBranch({ ...editingBranch, locationId: Number(e.target.value) })} required>
+              {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
             </SelectField>
-            <SelectField
-              label={t('fields.parent')}
-              value={editing.parentId ?? ''}
-              onChange={(e) => setEditing({ ...editing, parentId: e.target.value ? Number(e.target.value) : null })}
-            >
-              <option value="">{t('pages.orgUnits.noParent')}</option>
-              {parentOptions.filter((u) => u.id !== editing.id).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-            </SelectField>
+            <label className="checkbox-option">
+              <input type="checkbox" checked={editingBranch.headquarters} onChange={(e) => setEditingBranch({ ...editingBranch, headquarters: e.target.checked })} />
+              {t('fields.headquarters')}
+            </label>
             <div className="form-actions">
-              <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? t('common.saving') : t('common.save')}
-              </Button>
-              <Button type="button" variant="secondary" onClick={() => setEditing(null)}>{t('common.cancel')}</Button>
+              <Button type="submit" disabled={updateBranchMutation.isPending}>{t('common.save')}</Button>
+              <Button type="button" variant="secondary" onClick={() => setEditingBranch(null)}>{t('common.cancel')}</Button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {editingDepartment && (
+        <Modal title={`${t('pages.orgUnits.editTitle')} ${TYPE_LABEL_SINGULAR.DEPARTMENT}`} onClose={() => setEditingDepartment(null)}>
+          <form
+            onSubmit={(event: FormEvent) => {
+              event.preventDefault();
+              updateDepartmentMutation.mutate({
+                id: editingDepartment.id,
+                request: { name: editingDepartment.name, code: editingDepartment.code, branchIds: editingDepartment.branchIds },
+              });
+            }}
+            className="form-grid"
+          >
+            <TextField label={t('fields.name')} value={editingDepartment.name} onChange={(e) => setEditingDepartment({ ...editingDepartment, name: e.target.value })} required />
+            <TextField label={t('fields.code')} value={editingDepartment.code} onChange={(e) => setEditingDepartment({ ...editingDepartment, code: e.target.value })} required />
+            <div className="field">
+              <span className="field-label">{t('fields.branches')}</span>
+              {branches.map((b) => (
+                <label key={b.id} className="checkbox-option">
+                  <input
+                    type="checkbox"
+                    checked={editingDepartment.branchIds.includes(b.id)}
+                    onChange={() => {
+                      const next = editingDepartment.branchIds.includes(b.id)
+                        ? editingDepartment.branchIds.filter((id) => id !== b.id)
+                        : [...editingDepartment.branchIds, b.id];
+                      setEditingDepartment({ ...editingDepartment, branchIds: next });
+                    }}
+                  />
+                  {b.name}
+                </label>
+              ))}
+            </div>
+            <div className="form-actions">
+              <Button type="submit" disabled={updateDepartmentMutation.isPending}>{t('common.save')}</Button>
+              <Button type="button" variant="secondary" onClick={() => setEditingDepartment(null)}>{t('common.cancel')}</Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {viewing && (
+        <Modal title={viewing.data.name} onClose={() => setViewing(null)}>
+          <dl className="detail-grid">
+            <div className="detail-row"><dt>{t('fields.code')}</dt><dd>{viewing.data.code}</dd></div>
+            {viewing.tab === 'BRANCH' && (
+              <>
+                <div className="detail-row"><dt>{t('fields.location')}</dt><dd>{viewing.data.locationName}</dd></div>
+                <div className="detail-row"><dt>{t('fields.headquarters')}</dt><dd>{viewing.data.headquarters ? t('common.yes') : t('common.no')}</dd></div>
+              </>
+            )}
+            {viewing.tab === 'DEPARTMENT' && (
+              <div className="detail-row"><dt>{t('fields.branches')}</dt><dd><PillList items={viewing.data.branchNames} /></dd></div>
+            )}
+          </dl>
+          <div className="form-actions">
+            <Button type="button" onClick={() => setViewing(null)}>{t('common.close')}</Button>
+          </div>
         </Modal>
       )}
     </div>

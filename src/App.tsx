@@ -6,6 +6,7 @@ import { LocaleProvider } from './context/LocaleContext';
 import { AuthProvider } from './context/AuthContext';
 import { PlatformAuthProvider } from './context/PlatformAuthContext';
 import { BrandingProvider } from './context/BrandingContext';
+import { MessagingProvider } from './context/MessagingContext';
 import { AppRoutes } from './routes/AppRoutes';
 
 const queryClient = new QueryClient({
@@ -21,8 +22,10 @@ export default function App() {
             <AuthProvider>
               <PlatformAuthProvider>
                 <BrandingProvider>
-                  <AppRoutes />
-                  <Analytics />
+                  <MessagingProvider>
+                    <AppRoutes />
+                    <Analytics />
+                  </MessagingProvider>
                 </BrandingProvider>
               </PlatformAuthProvider>
             </AuthProvider>

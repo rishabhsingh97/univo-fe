@@ -23,13 +23,14 @@ import { TasksPage } from '../pages/TasksPage';
 import { OnboardingPage } from '../pages/OnboardingPage';
 import { ReferralsPage } from '../pages/ReferralsPage';
 import { ServicesPage } from '../pages/ServicesPage';
-import { OkrPage } from '../pages/OkrPage';
 import { TimeTrackerPage } from '../pages/TimeTrackerPage';
-import { EngagementPage } from '../pages/EngagementPage';
+import { FeedPage } from '../pages/FeedPage';
+import { AnnouncementsPage } from '../pages/AnnouncementsPage';
+import { PollsPage } from '../pages/PollsPage';
+import { InboxPage } from '../pages/InboxPage';
 import { EmployeesPage } from '../pages/EmployeesPage';
 import { OrgUnitsPage } from '../pages/OrgUnitsPage';
-import { DesignationsPage } from '../pages/DesignationsPage';
-import { GradesPage } from '../pages/GradesPage';
+import { JobClassificationPage } from '../pages/JobClassificationPage';
 import { LocationsPage } from '../pages/LocationsPage';
 import { AttendancePage } from '../pages/AttendancePage';
 import { LeavePage } from '../pages/LeavePage';
@@ -90,17 +91,17 @@ export function AppRoutes() {
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/referrals" element={<ReferralsPage />} />
           <Route path="/services" element={<ServicesPage />} />
-          <Route path="/okr" element={<OkrPage />} />
           <Route path="/time-tracker" element={<TimeTrackerPage />} />
-          <Route path="/engagement" element={<EngagementPage />} />
+          <Route path="/feed" element={<FeedPage />} />
+          <Route path="/announcements" element={<AnnouncementsPage />} />
+          <Route path="/polls" element={<PollsPage />} />
+          <Route path="/inbox" element={<InboxPage />} />
           <Route path="/files" element={<FilesPage />} />
           <Route path="/hr-letters" element={<HrLettersPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
           <Route path="/employees/:id" element={<EmployeeDetailPage />} />
           <Route path="/org-units" element={<OrgUnitsPage />} />
-          <Route path="/designations" element={<DesignationsPage />} />
-          <Route path="/grades" element={<GradesPage />} />
-          <Route path="/departments" element={<Navigate to="/org-units" replace />} />
+          <Route path="/job-classification" element={<JobClassificationPage />} />
           <Route path="/locations" element={<LocationsPage />} />
           <Route path="/attendance" element={<AttendancePage />} />
           <Route path="/leave" element={<LeavePage />} />

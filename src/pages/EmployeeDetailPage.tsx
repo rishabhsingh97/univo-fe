@@ -72,7 +72,7 @@ export function EmployeeDetailPage() {
         <dl className="detail-grid">
           <div className="detail-row"><dt>{t('fields.employeeCode')}</dt><dd>{employee.employeeCode}</dd></div>
           <div className="detail-row"><dt>{t('fields.email')}</dt><dd>{employee.email}</dd></div>
-          <div className="detail-row"><dt>{t('fields.orgUnit')}</dt><dd>{employee.orgUnitName ?? '-'}</dd></div>
+          <div className="detail-row"><dt>{t('fields.department')}</dt><dd>{employee.departmentName ?? '-'}</dd></div>
           <div className="detail-row"><dt>{t('fields.designation')}</dt><dd>{employee.designationTitle ?? '-'}</dd></div>
           <div className="detail-row"><dt>{t('fields.grade')}</dt><dd>{employee.gradeName ?? '-'}</dd></div>
           <div className="detail-row">

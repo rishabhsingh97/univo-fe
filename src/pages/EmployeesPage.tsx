@@ -88,10 +88,10 @@ export function EmployeesPage() {
       render: (e) => (
         <div className="table-cell-stack">
           <span>{e.designationTitle ?? '-'}</span>
-          <span className="table-cell-stack-secondary">{e.orgUnitName ?? '-'}</span>
+          <span className="table-cell-stack-secondary">{e.departmentName ?? '-'}</span>
         </div>
       ),
-      filter: { type: 'text', paramKey: 'designationTitle', placeholder: t('table.filterDesignationOrgUnit') },
+      filter: { type: 'text', paramKey: 'designationTitle', placeholder: t('table.filterDesignation') },
     },
     {
       key: 'manager',

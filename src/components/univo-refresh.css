@@ -264,7 +264,7 @@
 }
 
 /* ---------- ui.css · repeatable row groups ----------
-   Used for Education / Experience entries in Add Candidate, and for key results under an OKR. */
+   Used for Education / Experience entries in Add Candidate. */
 .repeat-row {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);

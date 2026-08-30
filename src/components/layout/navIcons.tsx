@@ -206,6 +206,14 @@ export function IconBell(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function IconMessage(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H8l-4 4V6a1 1 0 0 1 1-1Z" />
+    </Icon>
+  );
+}
+
 export function IconHelp(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

@@ -1,23 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { timeLogApi } from '../api/hr/timeLogApi';
 import { useLocale } from '../context/LocaleContext';
-import { Button, Card, DataTable, Modal, PageHeader, TextField } from '../components/ui';
+import { Button, Card, Modal, PageHeader, PagedDataTable, TextField } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
-
-interface TimeLogEntry {
-  id: number;
-  date: string;
-  clockIn: string;
-  clockOut: string | null;
-  durationMinutes: number;
-  taskTag: string;
-}
-
-function seedLog(): TimeLogEntry[] {
-  return [
-    { id: 1, date: '2026-08-24', clockIn: '09:32', clockOut: '13:05', durationMinutes: 213, taskTag: 'Sprint planning' },
-    { id: 2, date: '2026-08-24', clockIn: '14:00', clockOut: '18:10', durationMinutes: 250, taskTag: 'Feature development' },
-  ];
-}
+import type { TimeLogResponse } from '../types/timeTracker';
 
 function formatDuration(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
@@ -43,7 +30,8 @@ function emptyManualForm(): ManualEntryForm {
 
 export function TimeTrackerPage() {
   const { t } = useLocale();
-  const [log, setLog] = useState<TimeLogEntry[]>(seedLog());
+  const queryClient = useQueryClient();
+
   const [isTracking, setIsTracking] = useState(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -51,6 +39,18 @@ export function TimeTrackerPage() {
   const [startClockIn, setStartClockIn] = useState<string | null>(null);
   const [showManual, setShowManual] = useState(false);
   const [manualForm, setManualForm] = useState<ManualEntryForm>(emptyManualForm());
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['time-logs'] });
+
+  const createMutation = useMutation({
+    mutationFn: timeLogApi.create,
+    onSuccess: invalidate,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => timeLogApi.delete(id),
+    onSuccess: invalidate,
+  });
 
   useEffect(() => {
     if (!isTracking || startedAt === null) return;
@@ -71,10 +71,12 @@ export function TimeTrackerPage() {
   const handleStop = () => {
     setIsTracking(false);
     if (elapsedSeconds > 0) {
-      setLog((prev) => [
-        { id: Date.now(), date: new Date().toISOString().slice(0, 10), clockIn: startClockIn ?? nowHHMM(), clockOut: nowHHMM(), durationMinutes: Math.round(elapsedSeconds / 60), taskTag: tag || t('pages.timeTracker.untagged') },
-        ...prev,
-      ]);
+      createMutation.mutate({
+        date: new Date().toISOString().slice(0, 10),
+        clockIn: startClockIn ?? nowHHMM(),
+        clockOut: nowHHMM(),
+        taskTag: tag || t('pages.timeTracker.untagged'),
+      });
     }
     setStartedAt(null);
     setElapsedSeconds(0);
@@ -89,22 +91,23 @@ export function TimeTrackerPage() {
 
   const handleManualAdd = (event: FormEvent) => {
     event.preventDefault();
-    const [inH, inM] = manualForm.clockIn.split(':').map(Number);
-    const [outH, outM] = manualForm.clockOut.split(':').map(Number);
-    const durationMinutes = Math.max(0, outH * 60 + outM - (inH * 60 + inM));
-    setLog((prev) => [
-      { id: Date.now(), date: manualForm.date, clockIn: manualForm.clockIn, clockOut: manualForm.clockOut, durationMinutes, taskTag: manualForm.taskTag || t('pages.timeTracker.untagged') },
-      ...prev,
-    ]);
-    closeManual();
+    createMutation.mutate(
+      {
+        date: manualForm.date,
+        clockIn: manualForm.clockIn,
+        clockOut: manualForm.clockOut,
+        taskTag: manualForm.taskTag || t('pages.timeTracker.untagged'),
+      },
+      { onSuccess: closeManual },
+    );
   };
 
-  const columns: DataTableColumn<TimeLogEntry>[] = [
-    { key: 'date', header: t('fields.date'), render: (e) => e.date },
+  const columns: DataTableColumn<TimeLogResponse>[] = [
+    { key: 'date', header: t('fields.date'), render: (e) => e.date, sortKey: 'date' },
     { key: 'clockIn', header: t('pages.timeTracker.clockIn'), render: (e) => e.clockIn },
-    { key: 'clockOut', header: t('pages.timeTracker.clockOut'), render: (e) => e.clockOut ?? '-' },
+    { key: 'clockOut', header: t('pages.timeTracker.clockOut'), render: (e) => e.clockOut },
     { key: 'duration', header: t('fields.duration'), render: (e) => `${Math.floor(e.durationMinutes / 60)}h ${e.durationMinutes % 60}m` },
-    { key: 'tag', header: t('pages.timeTracker.taskTag'), render: (e) => e.taskTag },
+    { key: 'tag', header: t('pages.timeTracker.taskTag'), render: (e) => e.taskTag ?? '-' },
   ];
 
   return (
@@ -132,8 +135,13 @@ export function TimeTrackerPage() {
         </div>
       </Card>
 
-      <DataTable columns={columns} rows={log} getRowKey={(e) => e.id} onDelete={(e) => setLog((prev) => prev.filter((row) => row.id !== e.id))} />
-      <p className="field-hint" style={{ marginTop: 12 }}>{t('pages.timeTracker.mockNotice')}</p>
+      <PagedDataTable
+        columns={columns}
+        queryKey={['time-logs']}
+        fetchPage={timeLogApi.list}
+        getRowKey={(e) => e.id}
+        onDelete={(e) => deleteMutation.mutate(e.id)}
+      />
 
       {showManual && (
         <Modal title={t('pages.timeTracker.addManualEntry')} onClose={closeManual}>
@@ -151,9 +159,13 @@ export function TimeTrackerPage() {
               <label className="field-label">{t('pages.timeTracker.clockOut')}</label>
               <input type="time" className="input" value={manualForm.clockOut} onChange={(e) => setManualForm({ ...manualForm, clockOut: e.target.value })} required />
             </div>
-            <span className="field-hint" style={{ gridColumn: '1 / -1' }}>{t('pages.timeTracker.mockNotice')}</span>
+            {createMutation.isError && (
+              <div style={{ color: 'var(--color-danger)', fontSize: 13, gridColumn: '1 / -1' }}>{t('pages.timeTracker.invalidRange')}</div>
+            )}
             <div className="form-actions">
-              <Button type="submit">{t('common.create')}</Button>
+              <Button type="submit" disabled={createMutation.isPending}>
+                {createMutation.isPending ? t('common.creating') : t('common.create')}
+              </Button>
               <Button type="button" variant="secondary" onClick={closeManual}>{t('common.cancel')}</Button>
             </div>
           </form>

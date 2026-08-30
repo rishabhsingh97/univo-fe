@@ -7,12 +7,13 @@ import { BrandingPage } from './BrandingPage';
 import { DomainsPage } from './DomainsPage';
 import { RolesManagementPage, UsersManagementPage } from './RolesUsersPage';
 import { FieldConfigPage } from './FieldConfigPage';
+import { OrganizationSettingsPage } from './OrganizationSettingsPage';
 
-type Tab = 'auditLog' | 'branding' | 'domains' | 'roles' | 'users' | 'fields';
+type Tab = 'auditLog' | 'branding' | 'domains' | 'roles' | 'users' | 'fields' | 'organization';
 
 /**
  * Administration has no sidebar entries of its own (see AppRoutes.tsx / navConfig.ts) - it's a
- * single popup (opened from the topbar's gear icon) with these five sections as flat tabs
+ * single popup (opened from the topbar's gear icon) with these six sections as flat tabs
  * instead, rather than a module with its own nav tree. Each tab reuses the existing full page
  * component unchanged - none of them depend on routing, so mounting them here instead of at
  * their own route is a no-op for their own logic. None of those components render their own
@@ -25,6 +26,7 @@ const TABS: { key: Tab; labelKey: string; anyOf: string[] }[] = [
   { key: 'roles', labelKey: 'nav.roles', anyOf: ['admin.role.manage'] },
   { key: 'users', labelKey: 'nav.users', anyOf: ['admin.user.manage'] },
   { key: 'fields', labelKey: 'nav.settingsFields', anyOf: ['admin.fieldconfig.manage'] },
+  { key: 'organization', labelKey: 'nav.settingsOrganization', anyOf: ['hr.company.read'] },
 ];
 
 export function AdministrationPage() {
@@ -60,6 +62,7 @@ export function AdministrationPage() {
       {activeTab === 'roles' && <RolesManagementPage />}
       {activeTab === 'users' && <UsersManagementPage />}
       {activeTab === 'fields' && <FieldConfigPage />}
+      {activeTab === 'organization' && <OrganizationSettingsPage />}
     </div>
   );
 }

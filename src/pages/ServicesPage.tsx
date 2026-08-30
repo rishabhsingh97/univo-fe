@@ -1,41 +1,25 @@
 import { useState, type FormEvent } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { serviceRequestApi } from '../api/hr/serviceRequestApi';
 import { useLocale } from '../context/LocaleContext';
-import { Badge, Button, DataTable, Modal, PageHeader, SelectField, TextField, statusTone } from '../components/ui';
+import { Badge, Button, Modal, PageHeader, PagedDataTable, SelectField, TextField, statusTone } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
+import type {
+  ServiceCategory,
+  ServicePriority,
+  ServiceRequestRequest,
+  ServiceRequestResponse,
+  ServiceRequestStatus,
+} from '../types/services';
 
-type ServiceCategory = 'IT' | 'HR' | 'Facilities' | 'Payroll' | 'Other';
-type ServicePriority = 'LOW' | 'MEDIUM' | 'HIGH';
-type ServiceStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
-
-interface ServiceRequestNote {
-  id: number;
-  author: string;
-  note: string;
-  date: string;
-}
-
-interface ServiceRequest {
-  id: number;
-  subject: string;
-  category: ServiceCategory;
-  description: string;
-  priority: ServicePriority;
-  status: ServiceStatus;
-  raisedByName: string;
-  raisedOn: string;
-  notes: ServiceRequestNote[];
-}
-
-const CATEGORIES: ServiceCategory[] = ['IT', 'HR', 'Facilities', 'Payroll', 'Other'];
+const CATEGORIES: ServiceCategory[] = ['IT', 'HR', 'FACILITIES', 'PAYROLL', 'OTHER'];
 const PRIORITIES: ServicePriority[] = ['LOW', 'MEDIUM', 'HIGH'];
-const STATUS_FLOW: Record<ServiceStatus, ServiceStatus | null> = { OPEN: 'IN_PROGRESS', IN_PROGRESS: 'RESOLVED', RESOLVED: 'CLOSED', CLOSED: null };
-
-function seedRequests(): ServiceRequest[] {
-  return [
-    { id: 1, subject: 'Laptop running slow', category: 'IT', description: 'Laptop takes long to boot up.', priority: 'MEDIUM', status: 'OPEN', raisedByName: 'You', raisedOn: '2026-08-20', notes: [] },
-    { id: 2, subject: 'Payslip discrepancy', category: 'Payroll', description: 'HRA missing from last month payslip.', priority: 'HIGH', status: 'IN_PROGRESS', raisedByName: 'You', raisedOn: '2026-08-18', notes: [{ id: 1, author: 'Payroll Team', note: 'Looking into it, will update by EOD.', date: '2026-08-19' }] },
-  ];
-}
+const STATUS_FLOW: Record<ServiceRequestStatus, ServiceRequestStatus | null> = {
+  OPEN: 'IN_PROGRESS',
+  IN_PROGRESS: 'RESOLVED',
+  RESOLVED: 'CLOSED',
+  CLOSED: null,
+};
 
 interface RequestForm {
   subject: string;
@@ -50,47 +34,57 @@ function emptyForm(): RequestForm {
 
 export function ServicesPage() {
   const { t } = useLocale();
-  const [requests, setRequests] = useState<ServiceRequest[]>(seedRequests());
-  const [statusFilter, setStatusFilter] = useState<ServiceStatus | 'All'>('All');
+  const queryClient = useQueryClient();
+
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState<RequestForm>(emptyForm());
-  const [viewing, setViewing] = useState<ServiceRequest | null>(null);
+  const [viewing, setViewing] = useState<ServiceRequestResponse | null>(null);
   const [newNote, setNewNote] = useState('');
 
-  const filtered = statusFilter === 'All' ? requests : requests.filter((r) => r.status === statusFilter);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['services'] });
 
   const closeCreate = () => {
     setShowCreate(false);
     setForm(emptyForm());
   };
 
+  const createMutation = useMutation({
+    mutationFn: (request: ServiceRequestRequest) => serviceRequestApi.create(request),
+    onSuccess: () => { invalidate(); closeCreate(); },
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: ServiceRequestStatus }) => serviceRequestApi.updateStatus(id, { status }),
+    onSuccess: (updated) => {
+      invalidate();
+      setViewing((prev) => (prev && prev.id === updated.id ? updated : prev));
+    },
+  });
+
+  const addNoteMutation = useMutation({
+    mutationFn: ({ id, note }: { id: number; note: string }) => serviceRequestApi.addNote(id, { note }),
+    onSuccess: (updated) => {
+      invalidate();
+      setViewing((prev) => (prev && prev.id === updated.id ? updated : prev));
+      setNewNote('');
+    },
+  });
+
   const handleCreate = (event: FormEvent) => {
     event.preventDefault();
-    setRequests((prev) => [
-      { id: Date.now(), subject: form.subject, category: form.category, description: form.description, priority: form.priority, status: 'OPEN', raisedByName: 'You', raisedOn: new Date().toISOString().slice(0, 10), notes: [] },
-      ...prev,
-    ]);
-    closeCreate();
+    createMutation.mutate({
+      subject: form.subject,
+      category: form.category,
+      description: form.description || undefined,
+      priority: form.priority,
+    });
   };
 
-  const setStatus = (id: number, status: ServiceStatus) => {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
-    setViewing((prev) => (prev && prev.id === id ? { ...prev, status } : prev));
-  };
-
-  const addNote = (id: number) => {
-    if (!newNote.trim()) return;
-    const note: ServiceRequestNote = { id: Date.now(), author: 'You', note: newNote.trim(), date: new Date().toISOString().slice(0, 10) };
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, notes: [...r.notes, note] } : r)));
-    setViewing((prev) => (prev && prev.id === id ? { ...prev, notes: [...prev.notes, note] } : prev));
-    setNewNote('');
-  };
-
-  const columns: DataTableColumn<ServiceRequest>[] = [
+  const columns: DataTableColumn<ServiceRequestResponse>[] = [
     { key: 'subject', header: t('fields.reason'), render: (r) => r.subject },
     { key: 'category', header: t('pages.services.category'), render: (r) => r.category },
     { key: 'priority', header: t('pages.tasks.priority'), render: (r) => r.priority },
-    { key: 'raisedOn', header: t('pages.services.raisedOn'), render: (r) => r.raisedOn },
+    { key: 'raisedOn', header: t('pages.services.raisedOn'), render: (r) => new Date(r.raisedOn).toLocaleDateString() },
     { key: 'status', header: t('fields.status'), render: (r) => <Badge tone={statusTone(r.status)}>{r.status}</Badge> },
   ];
 
@@ -102,24 +96,17 @@ export function ServicesPage() {
         actions={<Button onClick={() => setShowCreate(true)}>{t('pages.services.addButton')}</Button>}
       />
 
-      <div className="row-actions" style={{ marginBottom: 16, flexWrap: 'wrap' }}>
-        <Button variant={statusFilter === 'All' ? 'primary' : 'secondary'} onClick={() => setStatusFilter('All')}>{t('common.all')}</Button>
-        {(Object.keys(STATUS_FLOW) as ServiceStatus[]).map((s) => (
-          <Button key={s} variant={statusFilter === s ? 'primary' : 'secondary'} onClick={() => setStatusFilter(s)}>{s}</Button>
-        ))}
-      </div>
-
-      <DataTable
+      <PagedDataTable
         columns={columns}
-        rows={filtered}
+        queryKey={['services']}
+        fetchPage={serviceRequestApi.list}
         getRowKey={(r) => r.id}
         onView={(r) => setViewing(r)}
         extraActions={(r) => {
           const next = STATUS_FLOW[r.status];
-          return next ? [{ label: `${t('pages.tasks.moveTo')} ${next}`, onClick: () => setStatus(r.id, next) }] : [];
+          return next ? [{ label: `${t('pages.tasks.moveTo')} ${next}`, onClick: () => statusMutation.mutate({ id: r.id, status: next }) }] : [];
         }}
       />
-      <p className="field-hint" style={{ marginTop: 12 }}>{t('pages.services.mockNotice')}</p>
 
       {showCreate && (
         <Modal title={t('pages.services.addButton')} onClose={closeCreate}>
@@ -135,9 +122,10 @@ export function ServicesPage() {
               <label className="field-label">{t('fields.description')}</label>
               <textarea className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </div>
-            <span className="field-hint" style={{ gridColumn: '1 / -1' }}>{t('pages.services.mockNotice')}</span>
             <div className="form-actions">
-              <Button type="submit">{t('common.create')}</Button>
+              <Button type="submit" disabled={createMutation.isPending}>
+                {createMutation.isPending ? t('common.creating') : t('common.create')}
+              </Button>
               <Button type="button" variant="secondary" onClick={closeCreate}>{t('common.cancel')}</Button>
             </div>
           </form>
@@ -150,13 +138,20 @@ export function ServicesPage() {
           <h3 className="form-section-title">{t('pages.services.notes')}</h3>
           {viewing.notes.map((n) => (
             <div key={n.id} style={{ marginBottom: 10 }}>
-              <div className="field-hint">{n.author} - {n.date}</div>
+              <div className="field-hint">{n.authorName ?? '-'} - {new Date(n.createdAt).toLocaleDateString()}</div>
               <div>{n.note}</div>
             </div>
           ))}
           <div className="row-actions">
             <TextField label={t('pages.services.addNote')} value={newNote} onChange={(e) => setNewNote(e.target.value)} />
-            <Button type="button" variant="secondary" onClick={() => addNote(viewing.id)}>{t('pages.addCandidate.addRow')}</Button>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={!newNote.trim() || addNoteMutation.isPending}
+              onClick={() => addNoteMutation.mutate({ id: viewing.id, note: newNote.trim() })}
+            >
+              {t('pages.addCandidate.addRow')}
+            </Button>
           </div>
         </Modal>
       )}

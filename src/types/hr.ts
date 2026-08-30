@@ -1,7 +1,5 @@
 import type { RequestStatus } from './finance';
 
-export type OrgUnitType = 'COMPANY' | 'BRANCH' | 'DEPARTMENT';
-
 export interface ReferralRequest {
   jobPostingId: number;
   candidateName: string;
@@ -27,36 +25,28 @@ export interface ReferralStatusUpdateRequest {
   status: RequestStatus;
 }
 
-export interface OrgUnitRequest {
-  name: string;
-  code: string;
-  type: OrgUnitType;
-  parentId?: number | null;
-}
-
-export interface OrgUnitResponse {
-  id: number;
-  name: string;
-  code: string;
-  type: OrgUnitType;
-  parentId: number | null;
-  parentName: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface DesignationRequest {
   title: string;
   code: string;
+  description?: string | null;
   gradeId: number;
+  departmentId?: number | null;
+  jobCategoryId?: number | null;
+  active: boolean;
 }
 
 export interface DesignationResponse {
   id: number;
   title: string;
   code: string;
+  description: string | null;
   gradeId: number | null;
   gradeName: string | null;
+  departmentId: number | null;
+  departmentName: string | null;
+  jobCategoryId: number | null;
+  jobCategoryName: string | null;
+  active: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -64,27 +54,64 @@ export interface DesignationResponse {
 export interface GradeRequest {
   name: string;
   code: string;
+  description?: string | null;
   level: number;
+  experienceMinYears?: number | null;
+  experienceMaxYears?: number | null;
+  compensationMin?: number | null;
+  compensationMax?: number | null;
+  variablePayPercent?: number | null;
+  promotionCycleMonths?: number | null;
+  nextGradeId?: number | null;
+  active: boolean;
 }
 
 export interface GradeResponse {
   id: number;
   name: string;
   code: string;
+  description: string | null;
   level: number;
+  experienceMinYears: number | null;
+  experienceMaxYears: number | null;
+  compensationMin: number | null;
+  compensationMax: number | null;
+  variablePayPercent: number | null;
+  promotionCycleMonths: number | null;
+  nextGradeId: number | null;
+  nextGradeName: string | null;
+  active: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
+export type LocationType = 'HEAD_OFFICE' | 'BRANCH_OFFICE' | 'WAREHOUSE' | 'REMOTE' | 'CLIENT_SITE';
+
 export interface LocationRequest {
   name: string;
   code: string;
+  description?: string | null;
+  locationType?: LocationType | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  pincode?: string | null;
+  active: boolean;
 }
 
 export interface LocationResponse {
   id: number;
   name: string;
   code: string;
+  description: string | null;
+  locationType: LocationType | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  pincode: string | null;
+  active: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -108,7 +135,6 @@ export interface EmployeeRequest {
   lastName: string;
   email: string;
   phone?: string;
-  orgUnitId?: number | null;
   designationId?: number | null;
   locationId?: number | null;
   managerId?: number | null;
@@ -147,18 +173,18 @@ export interface EmployeeResponse {
   lastName: string;
   email: string;
   phone: string | null;
-  orgUnitId: number | null;
-  orgUnitName: string | null;
   designationId: number | null;
   designationTitle: string | null;
   gradeId: number | null;
   gradeName: string | null;
+  departmentName: string | null;
   locationId: number | null;
   locationName: string | null;
   managerId: number | null;
   managerName: string | null;
   managerEmail: string | null;
   hasUserAccount: boolean;
+  userId: number | null;
   employmentType: EmploymentType;
   dateOfJoining: string;
   confirmationDate: string | null;

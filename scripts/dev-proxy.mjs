@@ -29,22 +29,41 @@ function targetFor(hostHeader) {
 }
 
 const server = http.createServer((req, res) => {
+  // A browser tab closing/reloading/navigating away mid-request resets its socket, which
+  // otherwise surfaces as an unhandled 'error' event on req/res and crashes the whole proxy
+  // process (taking every other in-flight request down with it) - these are expected, harmless
+  // client-side disconnects, not something to log or act on.
+  req.on('error', () => {});
+  res.on('error', () => {});
+
   const { host, port } = targetFor(req.headers.host);
   const proxyReq = http.request(
     { host, port, path: req.url, method: req.method, headers: req.headers },
     (proxyRes) => {
+      proxyRes.on('error', () => {});
       res.writeHead(proxyRes.statusCode ?? 502, proxyRes.headers);
       proxyRes.pipe(res);
     },
   );
   proxyReq.on('error', (err) => {
+    if (res.headersSent || res.writableEnded) return;
     res.writeHead(502, { 'Content-Type': 'text/plain' });
     res.end(`Proxy error reaching ${host}:${port} - is it running? (${err.message})`);
   });
   req.pipe(proxyReq);
 });
 
+// Same reasoning as req/res above, but for a raw socket that resets before a request is even
+// fully parsed (Node's documented hook for this - see the 'clientError' docs).
+server.on('clientError', (err, socket) => {
+  if (socket.writable) socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+});
+
 server.on('upgrade', (req, clientSocket, head) => {
+  // Now also carries the app's WebSocket messaging traffic (com.univo.config.WebSocketConfig's
+  // /ws endpoint), a long-lived connection that's especially likely to get reset by a browser
+  // tab reload/close - same unhandled-'error'-crashes-the-proxy risk as the plain HTTP path
+  // above, so both sockets need an error listener, not just proxySocket.
   const { host, port } = targetFor(req.headers.host);
   const proxySocket = net.connect(port, host, () => {
     const headerLines = Object.entries(req.headers).map(([key, value]) => `${key}: ${value}`);
@@ -53,6 +72,7 @@ server.on('upgrade', (req, clientSocket, head) => {
     proxySocket.pipe(clientSocket);
     clientSocket.pipe(proxySocket);
   });
+  clientSocket.on('error', () => proxySocket.destroy());
   proxySocket.on('error', () => clientSocket.destroy());
 });
 

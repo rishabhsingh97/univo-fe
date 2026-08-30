@@ -81,9 +81,18 @@ export function buildNavModules(t: T): NavModule[] {
           label: 'Workforce',
           items: [
             { to: '/employees', label: t('nav.employees'), icon: IconPeople, anyOf: ['hr.employee.read'] },
-            { to: '/org-units', label: t('nav.orgUnits'), icon: IconOrgUnits, anyOf: ['hr.orgunit.read'] },
-            { to: '/designations', label: t('nav.designations'), icon: IconOrgUnits, anyOf: ['hr.designation.read'] },
-            { to: '/grades', label: t('nav.grades'), icon: IconOrgUnits, anyOf: ['hr.grade.read'] },
+            {
+              to: '/org-units',
+              label: t('nav.orgUnits'),
+              icon: IconOrgUnits,
+              anyOf: ['hr.branch.read', 'hr.department.read'],
+            },
+            {
+              to: '/job-classification',
+              label: t('nav.jobClassification'),
+              icon: IconOrgUnits,
+              anyOf: ['hr.jobcategory.read', 'hr.designation.read', 'hr.grade.read'],
+            },
             { to: '/locations', label: t('nav.locations'), icon: IconLocation, anyOf: ['hr.location.read'] },
           ],
         },
@@ -178,12 +187,15 @@ export function buildNavModules(t: T): NavModule[] {
           items: [
             { to: '/performance/goals', label: t('nav.goals'), icon: IconCheck, anyOf: ['performance.read'] },
             { to: '/performance/appraisals', label: t('nav.appraisals'), icon: IconCheck, anyOf: ['performance.read'] },
-            { to: '/okr', label: t('nav.okr'), icon: IconCheck },
           ],
         },
         {
-          label: 'Engagement',
-          items: [{ to: '/engagement', label: t('nav.engagement'), icon: IconBell }],
+          label: 'Social',
+          items: [
+            { to: '/feed', label: t('nav.feed'), icon: IconDocument },
+            { to: '/announcements', label: t('nav.announcements'), icon: IconBell },
+            { to: '/polls', label: t('nav.polls'), icon: IconCheck },
+          ],
         },
       ],
     },

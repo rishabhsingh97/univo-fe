@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { platformModuleApi } from '../api/platform/platformModuleApi';
-import { Button, DataTable, Modal, PageHeader, TextField } from '../components/ui';
+import { Button, DataTable, Modal, PageHeader, TextField, deleteAction } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
 import type { CreateModuleRequest, ModuleResponse } from '../types/platform';
 
@@ -31,21 +31,6 @@ export function PlatformModulesPage() {
   const columns: DataTableColumn<ModuleResponse>[] = [
     { key: 'moduleKey', header: 'Key', render: (m) => m.moduleKey },
     { key: 'label', header: 'Label', render: (m) => m.label },
-    {
-      key: 'actions',
-      header: 'Actions',
-      render: (m) => (
-        <Button
-          variant="danger"
-          onClick={() =>
-            window.confirm(`Remove the "${m.label}" module? Any tenant with it explicitly toggled will lose that setting.`) &&
-            deleteMutation.mutate(m.moduleKey)
-          }
-        >
-          Delete
-        </Button>
-      ),
-    },
   ];
 
   return (
@@ -56,7 +41,21 @@ export function PlatformModulesPage() {
         actions={<Button onClick={() => setShowCreate(true)}>+ Add module</Button>}
       />
 
-      <DataTable columns={columns} rows={data ?? []} isLoading={isLoading} getRowKey={(m) => m.moduleKey} />
+      <DataTable
+        columns={columns}
+        rows={data ?? []}
+        isLoading={isLoading}
+        getRowKey={(m) => m.moduleKey}
+        viewKey="platform-modules"
+        extraActions={(m) => [
+          deleteAction(
+            'Delete',
+            () =>
+              window.confirm(`Remove the "${m.label}" module? Any tenant with it explicitly toggled will lose that setting.`) &&
+              deleteMutation.mutate(m.moduleKey),
+          ),
+        ]}
+      />
 
       {showCreate && (
         <Modal title="New module" onClose={() => setShowCreate(false)}>

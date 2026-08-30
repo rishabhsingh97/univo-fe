@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fieldConfigApi } from '../api/admin/fieldConfigApi';
 import { useLocale } from '../context/LocaleContext';
-import { ActionMenu, Button, Card, DataTable, Modal, SelectField, TextField, deleteAction, editAction } from '../components/ui';
+import { Button, Card, DataTable, Modal, SelectField, TextField, deleteAction } from '../components/ui';
 import type { DataTableColumn } from '../components/ui';
 import type { UiFieldConfigRequest, UiFieldConfigResponse } from '../types/admin';
 
@@ -16,7 +16,9 @@ const KNOWN_FIELDS: Record<string, string[]> = {
     'manager', 'employmentType', 'dateOfJoining', 'confirmationDate', 'status', 'pan', 'aadhaarMasked',
     'uan', 'esiNumber', 'emergencyContactName', 'emergencyContactPhone', 'bankAccountNumber', 'bankIfsc',
   ],
-  OrgUnit: ['name', 'code', 'type', 'parent'],
+  Branch: ['name', 'code', 'location', 'headquarters'],
+  Department: ['name', 'code', 'branches'],
+  JobCategory: ['name', 'code', 'departments'],
   AttendanceRecord: ['employee', 'attendanceDate', 'status', 'remarks'],
   Holiday: ['name', 'holidayDate', 'recurringYearly'],
   LeaveApplication: ['employee', 'leaveType', 'startDate', 'endDate', 'reason', 'status'],
@@ -124,22 +126,6 @@ export function FieldConfigPage() {
     { key: 'required', header: t('fields.required'), render: (c) => (c.required ? '✓' : '-') },
     { key: 'readOnly', header: t('fields.readOnly'), render: (c) => (c.readOnly ? '✓' : '-') },
     { key: 'displayOrder', header: t('fields.displayOrder'), render: (c) => c.displayOrder },
-    {
-      key: 'actions',
-      header: t('common.actions'),
-      render: (c) => (
-        <ActionMenu
-          items={[
-            editAction(t('common.edit'), () => setEditing(c)),
-            deleteAction(
-              t('pages.fieldConfig.resetField'),
-              () => window.confirm(t('pages.fieldConfig.confirmResetField')) && deleteMutation.mutate(c.id as number),
-              { hidden: c.id === null },
-            ),
-          ]}
-        />
-      ),
-    },
   ];
 
   return (
@@ -155,7 +141,21 @@ export function FieldConfigPage() {
         </SelectField>
       </Card>
 
-      <DataTable columns={columns} rows={rows} isLoading={isLoading} getRowKey={(c) => c.fieldName} />
+      <DataTable
+        columns={columns}
+        rows={rows}
+        isLoading={isLoading}
+        getRowKey={(c) => c.fieldName}
+        viewKey="field-config"
+        onEdit={(c) => setEditing(c)}
+        extraActions={(c) => [
+          deleteAction(
+            t('pages.fieldConfig.resetField'),
+            () => window.confirm(t('pages.fieldConfig.confirmResetField')) && deleteMutation.mutate(c.id as number),
+            { hidden: c.id === null },
+          ),
+        ]}
+      />
 
       {editing && (
         <Modal title={editing.fieldName} onClose={() => setEditing(null)}>

@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobRequisitionApi } from '../api/recruitment/jobRequisitionApi';
-import { orgUnitApi } from '../api/hr/orgUnitApi';
 import { designationApi } from '../api/hr/designationApi';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
@@ -12,7 +11,7 @@ import type { JobRequisitionRequest, JobRequisitionResponse, RequisitionStatus }
 const STATUSES: RequisitionStatus[] = ['OPEN', 'ON_HOLD', 'CLOSED'];
 
 function emptyForm(): JobRequisitionRequest {
-  return { title: '', orgUnitId: null, designationId: null, openings: 1, status: 'OPEN', description: '' };
+  return { title: '', designationId: null, openings: 1, status: 'OPEN', description: '' };
 }
 
 export function JobRequisitionsPage() {
@@ -26,7 +25,6 @@ export function JobRequisitionsPage() {
   const canWrite = hasPermission('recruitment.requisition.write');
   const canDelete = hasPermission('recruitment.requisition.delete');
 
-  const { data: orgUnits } = useQuery({ queryKey: ['org-units', 'select'], queryFn: () => orgUnitApi.list(0, 200) });
   const { data: designations } = useQuery({ queryKey: ['designations', 'select'], queryFn: () => designationApi.list(0, 200) });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['job-requisitions'] });
@@ -46,8 +44,8 @@ export function JobRequisitionsPage() {
 
   const columns: DataTableColumn<JobRequisitionResponse>[] = [
     { key: 'title', header: t('fields.name'), render: (r) => r.title, sortKey: 'title' },
-    { key: 'org', header: t('fields.orgUnit'), render: (r) => r.orgUnitName ?? '-' },
     { key: 'designation', header: t('fields.designation'), render: (r) => r.designationTitle ?? '-' },
+    { key: 'department', header: t('fields.department'), render: (r) => r.departmentName ?? '-' },
     { key: 'openings', header: t('pages.jobRequisitions.openings'), render: (r) => r.openings },
     {
       key: 'status',
@@ -56,22 +54,21 @@ export function JobRequisitionsPage() {
     },
   ];
 
-  const orgUnitOptions = orgUnits?.content ?? [];
   const designationOptions = designations?.content ?? [];
 
-  const fields = (value: JobRequisitionRequest, onChange: (next: JobRequisitionRequest) => void) => (
+  const fields = (value: JobRequisitionRequest, onChange: (next: JobRequisitionRequest) => void) => {
+    const selectedDesignation = designationOptions.find((d) => d.id === value.designationId);
+    return (
     <>
       <TextField label={t('fields.name')} value={value.title} onChange={(e) => onChange({ ...value, title: e.target.value })} required />
-      <SelectField label={t('fields.orgUnit')} value={value.orgUnitId ?? ''}
-        onChange={(e) => onChange({ ...value, orgUnitId: e.target.value ? Number(e.target.value) : null })}>
-        <option value="">{t('common.none')}</option>
-        {orgUnitOptions.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-      </SelectField>
       <SelectField label={t('fields.designation')} value={value.designationId ?? ''}
         onChange={(e) => onChange({ ...value, designationId: e.target.value ? Number(e.target.value) : null })}>
         <option value="">{t('common.none')}</option>
         {designationOptions.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
       </SelectField>
+      {selectedDesignation && (
+        <TextField label={t('fields.department')} value={selectedDesignation.departmentName ?? '-'} readOnly disabled />
+      )}
       <TextField label={t('pages.jobRequisitions.openings')} type="number" min={1} value={value.openings ?? 1}
         onChange={(e) => onChange({ ...value, openings: Number(e.target.value) })} />
       <SelectField label={t('fields.status')} value={value.status ?? 'OPEN'}
@@ -81,7 +78,8 @@ export function JobRequisitionsPage() {
       <TextField label={t('fields.description')} value={value.description ?? ''}
         onChange={(e) => onChange({ ...value, description: e.target.value })} />
     </>
-  );
+    );
+  };
 
   return (
     <div>
@@ -123,7 +121,6 @@ export function JobRequisitionsPage() {
                 id: editing.id,
                 request: {
                   title: editing.title,
-                  orgUnitId: editing.orgUnitId,
                   designationId: editing.designationId,
                   openings: editing.openings,
                   status: editing.status,

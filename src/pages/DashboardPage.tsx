@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { useTimezone } from '../hooks/useTimezone';
 import { employeeApi } from '../api/hr/employeeApi';
-import { orgUnitApi } from '../api/hr/orgUnitApi';
+import { branchApi } from '../api/hr/branchApi';
 import { attendanceApi } from '../api/attendance/attendanceApi';
 import { leaveApi } from '../api/attendance/leaveApi';
 import { holidayApi } from '../api/attendance/holidayApi';
@@ -24,7 +24,7 @@ export function DashboardPage() {
   const queryClient = useQueryClient();
 
   const canViewEmployees = hasPermission('hr.employee.read');
-  const canViewOrgUnits = hasPermission('hr.orgunit.read');
+  const canViewOrgUnits = hasPermission('hr.branch.read');
   const canViewAttendance = hasPermission('attendance.read');
   const canViewLeave = hasPermission('leave.read');
   const canManageLeave = hasPermission('leave.write');
@@ -37,8 +37,8 @@ export function DashboardPage() {
   });
 
   const orgUnitsQuery = useQuery({
-    queryKey: ['dashboard', 'org-units'],
-    queryFn: () => orgUnitApi.list(0, 1),
+    queryKey: ['dashboard', 'branches'],
+    queryFn: () => branchApi.list(0, 1),
     enabled: canViewOrgUnits,
   });
 

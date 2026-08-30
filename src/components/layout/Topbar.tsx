@@ -5,9 +5,10 @@ import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
 import { useTimezone } from '../../hooks/useTimezone';
 import { notificationApi } from '../../api/notification/notificationApi';
+import { conversationApi } from '../../api/common/conversationApi';
 import type { NotificationResponse } from '../../types/notification';
 import { buildSearchIndex, type NavLeaf } from './navConfig';
-import { IconSearch, IconBell, IconHelp, IconLogout, IconGeneral, IconPeople, IconLock, IconMenu } from './navIcons';
+import { IconSearch, IconBell, IconMessage, IconHelp, IconLogout, IconGeneral, IconPeople, IconLock, IconMenu } from './navIcons';
 import './layout.css';
 
 const MAX_RESULTS = 8;
@@ -107,6 +108,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
       </div>
 
       <div className="topbar-actions">
+        <MessagesButton />
         <NotificationBell />
         {canSeeAdmin && (
           <button type="button" className="icon-btn" aria-label="Administration" onClick={() => navigate('/admin')}>
@@ -216,6 +218,29 @@ function NotificationBell() {
         </div>
       )}
     </div>
+  );
+}
+
+/** Unlike NotificationBell, no popover here - a conversation list needs a real thread view, so
+ * this just navigates to /inbox. The badge count refreshes live via MessagingContext's WebSocket
+ * push (see App.tsx); the refetchInterval below is only a safety net for a missed push. */
+function MessagesButton() {
+  const { t } = useLocale();
+  const navigate = useNavigate();
+
+  const { data: conversations } = useQuery({
+    queryKey: ['conversations'],
+    queryFn: () => conversationApi.list(),
+    refetchInterval: 60000,
+  });
+
+  const unreadCount = (conversations ?? []).reduce((sum, c) => sum + c.unreadCount, 0);
+
+  return (
+    <button type="button" className="icon-btn notification-trigger" aria-label={t('topbar.messages')} onClick={() => navigate('/inbox')}>
+      <IconMessage />
+      {unreadCount > 0 && <span className="notification-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+    </button>
   );
 }
 

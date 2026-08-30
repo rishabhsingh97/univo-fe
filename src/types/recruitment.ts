@@ -4,7 +4,6 @@ export type RequisitionStatus = 'OPEN' | 'ON_HOLD' | 'CLOSED';
 
 export interface JobRequisitionRequest {
   title: string;
-  orgUnitId?: number | null;
   designationId?: number | null;
   openings?: number;
   status?: RequisitionStatus;
@@ -14,10 +13,9 @@ export interface JobRequisitionRequest {
 export interface JobRequisitionResponse {
   id: number;
   title: string;
-  orgUnitId: number | null;
-  orgUnitName: string | null;
   designationId: number | null;
   designationTitle: string | null;
+  departmentName: string | null;
   openings: number;
   status: RequisitionStatus;
   description: string | null;
